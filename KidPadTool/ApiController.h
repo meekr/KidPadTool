@@ -54,14 +54,13 @@ public:
 	BOOL InsertXMLBufferElement(CString xmlFile, CString appCategoryXml, CString listElementName, CString programElementName, program_t& program);
 	BOOL CopyDirectory(CString srcName, CString destName);
 	BOOL SaveFileFromBase64(CString base64String, CString filePath);
-	BOOL CancelDownload(CString appName);
+	BOOL CancelDownload(CString appPathWithoutExtention);
 	void DeletePcDirectory(CString szPath);
 	void DispatchFlashCommand(CString command, CString args);
 	void DispatchFlashCall(const char* request, const char* args);
 
 protected:
 	CString m_workingFolderName;
-	CString	m_pcLocalHostName;
 	CString m_programUsbDiskName;
 
 	CString m_driveTempName;

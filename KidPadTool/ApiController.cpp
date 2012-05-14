@@ -12,14 +12,13 @@
 
 #include "FileSystem.h"
 #include "tinyxml.h"
-
+#include <afx.h>
 
 
 void ApiController::Initialize()
 {
 	m_pu8xmlBuffer = NULL;
-	m_pcLocalHostName = _T("D:\\KidPadDirectory");
-
+	
 	ScanUsbDisk();
 
 	TCHAR szFolder[MAX_PATH * 2];
@@ -282,7 +281,7 @@ void ApiController::DispatchFlashCall(const char* request, const char* args)
 		cs += CString("</string>");
 		flashUI->SetReturnValue((LPCTSTR)cs);
 	}
-	else if (strcmp(request, "F2C_getLocalFileNames") == 0) {
+	else if (strcmp(request, "F2C_getDownloadedAppNames") == 0) {
 		CString cs("<string>");
 		cs += GetLocalAppNames(CString(args));
 		cs += CString("</string>");
@@ -390,7 +389,7 @@ CString ApiController::GetLocalAppNames(CString localDirectoryPath)
 	if (!found)
 	{
 		finder.Close();
-		return false;
+		return _T("");
 	}
 
 	CString ret_value;
@@ -1091,15 +1090,13 @@ BOOL ApiController::CopyDirectory(CString srcName, CString destName)
 
 BOOL ApiController::SaveFileFromBase64(CString base64String, CString filePath)
 {
-	base64String.Replace(_T('#'), _T('\n'));
-	unsigned int char_len = base64String.GetLength();
-	std::string _result_str;
-#ifdef UNICODE
-	_result_str = __Base64DecodeW(base64String.GetBuffer(char_len+1));
-#else
-	_result_str = __Base64Decode(base64String.GetBuffer(char_len+1));
-#endif
+	//base64String = GetBase64DataFromTextFile(_T("C:\\pic_2.txt"));
+	BOOL rtv = FALSE ;
+	unsigned char * c_result = 0 ;
+	unsigned int len_result = 0 ;
 	
+	len_result = __Base64Decode(base64String, (void**)(&c_result));	
+
 	HANDLE mhd = (HANDLE)::CreateFile(filePath.GetBuffer(filePath.GetLength()+1) ,
 			GENERIC_WRITE,	//GENERIC_READ| GENERIC_WRITE,
 			0,		//FILE_SHARE_READ | FILE_SHARE_WRITE ,
@@ -1108,20 +1105,30 @@ BOOL ApiController::SaveFileFromBase64(CString base64String, CString filePath)
 			FILE_ATTRIBUTE_NORMAL,//|FILE_FLAG_OVERLAPPED,
 			0
 			);
+
 	if(mhd == INVALID_HANDLE_VALUE) { return FALSE; }
 
 	DWORD wlen = 0;
-
-	if( ::WriteFile(mhd , (LPCVOID)_result_str.data() , _result_str.length(), &wlen , 0) == 0)
+	if( ::WriteFile(mhd , (LPCVOID)c_result ,len_result, &wlen , 0) == 0)
 	{
 		::CloseHandle(mhd);
-		return FALSE;
+		return FALSE ;
 	}
+
 	::CloseHandle(mhd);
-	return true;
+	
+	free(c_result);
+	
+	return TRUE;
 }
 
-BOOL ApiController::CancelDownload(CString appName)
+BOOL ApiController::CancelDownload(CString appPathWithoutExtention)
 {
+	CFileFind finder;
+	BOOL found = finder.FindFile(appPathWithoutExtention + _T(".png"));
+	if (found)
+	{
+		::DeleteFile(appPathWithoutExtention + _T(".png"));
+	}
 	return TRUE;
 }
