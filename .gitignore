@@ -10,7 +10,10 @@
 *.lai
 *.la
 *.a
+<<<<<<< HEAD
 
 # Build and Release Folders
 Debug/
 KidPadTool/Debug
+=======
+>>>>>>> 5649446b9b6379b3baf1b5b2ce240f6f288c06ad
