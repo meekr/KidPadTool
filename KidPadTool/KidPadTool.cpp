@@ -84,7 +84,7 @@ BOOL CKidPadToolApp::InitInstance()
 	return FALSE;
 }
 
-int CKidPadToolApp::ExitInstance()
+BOOL CKidPadToolApp::ExitUsb()
 {
 	// TODO: Add your specialized code here and/or call the base class
 	// Nuvoton CCLi8 (2010.08.12)
@@ -98,6 +98,14 @@ int CKidPadToolApp::ExitInstance()
 		delete usbDisk;
 		delete usbDiskDriver;
 	}
+	m_usbDisks.clear();
+
+	return TRUE;
+}
+
+int CKidPadToolApp::ExitInstance()
+{
+	ExitUsb();
 
 	return CWinAppEx::ExitInstance();
 }

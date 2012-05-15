@@ -8,6 +8,7 @@
 #include "base64.h"
 #include <iostream>
 #include "tinyxml.h"
+#include "Dbt.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -37,6 +38,7 @@ BEGIN_MESSAGE_MAP(CKidPadToolDlg, CDialog)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_NCHITTEST()
+	ON_WM_DEVICECHANGE()
 	//}}AFX_MSG_MAP
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
@@ -118,6 +120,18 @@ HCURSOR CKidPadToolDlg::OnQueryDragIcon()
 
 afx_msg BOOL CKidPadToolDlg::OnDeviceChange(UINT nEventType, DWORD_PTR dwData)
 {
+	DEV_BROADCAST_DEVICEINTERFACE * dbd = (DEV_BROADCAST_DEVICEINTERFACE*) dwData;
+	switch(nEventType)
+	{
+		case DBT_DEVICEREMOVECOMPLETE:
+			((CKidPadToolApp *)AfxGetApp ())->ExitUsb();
+	flashUI.CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>0</string></arguments></invoke>"));
+			break;
+		case DBT_DEVICEARRIVAL:
+			fsInitFileSystem();
+			apiController.ScanUsbDisk();
+			break;
+	}
 	return true;
 }
 

@@ -138,6 +138,7 @@ void ApiController::ScanUsbDisk()
 	// Find out USB disks that have been attached.
 	UINT32 usbDiskMask = UsbDiskDriver::scan ();
 
+	BOOL found = FALSE;
 	// For each scanned USB disk, add it to list if it meets some rule.
 	for (int i = 0; i < 26; i ++) {
 		if (usbDiskMask & (1 << i)) {
@@ -201,6 +202,7 @@ void ApiController::ScanUsbDisk()
 
 				// List available logical disks according to filesystem's parsing.
 				UpdateList();
+				found = TRUE;
 
 				scopedUsbDisk.release();
 				scopedUsbDiskDriver.release();
@@ -210,6 +212,9 @@ void ApiController::ScanUsbDisk()
 			}
 		}
 	}
+
+	//if (found == FALSE)
+	//	flashUI->CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>0</string></arguments></invoke>"));
 }
 
 int CALLBACK BrowseCallbackProc(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
@@ -271,7 +276,8 @@ void ApiController::DispatchFlashCall(const char* request, const char* args)
 {
 	if (strcmp(request, "F2C_getDeviceFileContent") == 0) {
 		CString cs("<string>");
-		cs += GetDeviceFileContent(CString(args));
+		CString ret = GetDeviceFileContent(CString(args));
+		cs += ret;
 		cs += CString("</string>");
 		flashUI->SetReturnValue((LPCTSTR)cs);
 	}
@@ -318,6 +324,11 @@ void ApiController::DispatchFlashCall(const char* request, const char* args)
 		flashUI->SetReturnValue((LPCTSTR)cs);
 	}
 	else if (strcmp(request, "F2C_cancelDownload") == 0) {
+		CString str(args);
+		CancelDownload(str);
+	}
+	else if (strcmp(request, "F2C_TRACE") == 0) {
+		TRACE(args);
 	}
 }
 
@@ -346,7 +357,15 @@ CString ApiController::GetDeviceFileContent(CString filePath)
 		return NULL;
 	}
 	fsCloseFile(hdl);
-	return (CString)m_pu8xmlBuffer;
+
+	TiXmlDocument doc;
+	doc.Parse(m_pu8xmlBuffer);	//, NULL, TIXML_ENCODING_UTF8);
+	TiXmlPrinter printer;
+    doc.Accept(&printer);
+    const char* ret = printer.CStr();
+	return CA2CT(ret);
+
+	//return (CString)m_pu8xmlBuffer;
 }
 
 CString ApiController::GetDeviceIconBase64(CString iconFilePath)

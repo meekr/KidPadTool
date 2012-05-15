@@ -44,6 +44,10 @@ public:
 
 	DECLARE_MESSAGE_MAP()
 
+public:
+	virtual BOOL ExitUsb();
+
+
 	virtual int ExitInstance();
 };
 
