@@ -329,6 +329,7 @@ void ApiController::DispatchFlashCall(const char* request, const char* args)
 	}
 	else if (strcmp(request, "F2C_TRACE") == 0) {
 		TRACE(args);
+		TRACE(_T("\n"));
 	}
 }
 
@@ -358,20 +359,14 @@ CString ApiController::GetDeviceFileContent(CString filePath)
 	}
 	fsCloseFile(hdl);
 
-	TiXmlDocument doc;
-	doc.Parse(m_pu8xmlBuffer);	//, NULL, TIXML_ENCODING_UTF8);
-	TiXmlPrinter printer;
-    doc.Accept(&printer);
-    const char* ret = printer.CStr();
-	return CA2CT(ret);
+	CString cstr_v = b64::UTF8ToCString(m_pu8xmlBuffer, (unsigned int) nBytes);
 
-	//return (CString)m_pu8xmlBuffer;
+	
+	return cstr_v;
 }
 
 CString ApiController::GetDeviceIconBase64(CString iconFilePath)
 {
-	TRACE(iconFilePath);
-	TRACE("\n");
 	int hdl, hdl2;
 	hdl = hdl2 = 0;
 
@@ -457,10 +452,6 @@ CString ApiController::GetLocalIconBase64(CString iconFilePath)
 }
 BOOL ApiController::DeleteAppOnDevice(CString appDirectoryPaths)
 {
-	/*CString css("C:\\story\\tellMeYourWishes");
-	DeleteDirectoryOnDevice(css);*/
-
-
 	// appDirectoryPaths: appName,appDirectoryPath,appCategoryXmlFilePath
 	CString appName = appDirectoryPaths.Left(appDirectoryPaths.Find(_T(',')));
 	CString appDirectory = appDirectoryPaths.Left(appDirectoryPaths.ReverseFind(_T(',')));
@@ -472,7 +463,7 @@ BOOL ApiController::DeleteAppOnDevice(CString appDirectoryPaths)
 	*** delete files from device ****
 	*********************************/
 	if (DeleteDirectoryOnDevice(appDirectory) == false) {
-		//MessageBox(_T("Delete device program failed"), _T("Uninstall Error"), MB_OK|MB_ICONSTOP);
+		MessageBox(ownerWindow->m_hWnd, _T("Delete device program failed"), _T("Uninstall Error"), MB_OK|MB_ICONSTOP);
 		return false;
 	}
 
@@ -493,7 +484,7 @@ BOOL ApiController::DeleteDirectoryOnDevice(CString directory) {
 	DWORD err = fsFindFirst((CHAR *)(LPCWSTR)(directory + _T('\\')), NULL, &fileFind);
 	if (err != 0)
 	{
-		//MessageBox( _T("Cannot find the device directory \"") + directory, _T("Error"), MB_OK|MB_ICONSTOP);
+		MessageBox(ownerWindow->m_hWnd, _T("Cannot find the device directory \"") + directory, _T("Error"), MB_OK|MB_ICONSTOP);
 		return false;
 	}
 
@@ -522,7 +513,7 @@ BOOL ApiController::DeleteDirectoryOnDevice(CString directory) {
 			err = fsDeleteFile((CHAR *)(LPCWSTR)tempName, NULL);
 			if (err != FS_OK)
 			{
-				//MessageBox( _T("Delete file \"") + tempName + _T("\" failed on device"), _T("Error"), MB_OK|MB_ICONSTOP );
+				MessageBox(ownerWindow->m_hWnd, _T("Delete file \"") + tempName + _T("\" failed on device"), _T("Error"), MB_OK|MB_ICONSTOP );
 				return false;
 			}
 		}
@@ -557,11 +548,12 @@ BOOL ApiController::DeleteAppNodeOnDeviceXml(CString appCategoryXml, CString app
 	node = listElement->FirstChildElement();
 	if (!node)
 	{
-		//MessageBox( _T("No installed programs"), _T("Info"), MB_OK );
+		MessageBox(ownerWindow->m_hWnd, _T("No installed programs"), _T("Info"), MB_OK );
 		return false;
 	}
 
 	CString tempName;
+	BOOL found = FALSE;
 	// may enhance here, looply found name and deploytype
 	for (xElement = node->ToElement(); xElement; xElement = xElement->NextSiblingElement())
 	{
@@ -571,9 +563,15 @@ BOOL ApiController::DeleteAppNodeOnDeviceXml(CString appCategoryXml, CString app
 		{
 			tempName = CA2CT(nameElement->GetText(), CP_UTF8);
 			if (tempName == appName)
+			{
+				found = TRUE;
 				break;
+			}
 		}
 	}
+	if (found == FALSE)
+		TRACE(_T("found no match node for ") + appName + _T("!!!\n"));
+
 	listElement->RemoveChild(xElement);
 
 	TiXmlPrinter printer;
@@ -595,9 +593,6 @@ BOOL ApiController::DeleteAppNodeOnDeviceXml(CString appCategoryXml, CString app
 		return false;
 	}
 	fsCloseFile(hdl);
-
-	CString content = GetDeviceFileContent(appCategoryXml);
-	
 	return true;
 }
 
@@ -1110,11 +1105,11 @@ BOOL ApiController::CopyDirectory(CString srcName, CString destName)
 BOOL ApiController::SaveFileFromBase64(CString base64String, CString filePath)
 {
 	//base64String = GetBase64DataFromTextFile(_T("C:\\pic_2.txt"));
-	BOOL rtv = FALSE ;
+	BOOL rtv = FALSE ; 
 	unsigned char * c_result = 0 ;
 	unsigned int len_result = 0 ;
 	
-	len_result = __Base64Decode(base64String, (void**)(&c_result));	
+	len_result = b64::Base64Decode(base64String, (void**)(&c_result));	
 
 	HANDLE mhd = (HANDLE)::CreateFile(filePath.GetBuffer(filePath.GetLength()+1) ,
 			GENERIC_WRITE,	//GENERIC_READ| GENERIC_WRITE,
