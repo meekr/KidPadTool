@@ -2,6 +2,8 @@
 #include <string>
 #include <map>
 #include "shockwaveflash1.h"
+#include "tinyxml.h"
+
 
 #define NAME_LENGTH 256
 
@@ -58,10 +60,15 @@ public:
 	void DeletePcDirectory(CString szPath);
 	void DispatchFlashCommand(CString command, CString args);
 	void DispatchFlashCall(const char* request, const char* args);
+	void Exit();
 
 protected:
 	CString m_workingFolderName;
 	CString m_programUsbDiskName;
+
+	CString m_downloadDirectory;
+	CString m_downloadXml;
+	TiXmlDocument *m_downloadDoc;
 
 	CString m_driveTempName;
 	CString m_driveNANDName;

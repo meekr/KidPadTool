@@ -11,7 +11,6 @@
 #endif
 
 #include "FileSystem.h"
-#include "tinyxml.h"
 #include <afx.h>
 
 
@@ -27,40 +26,36 @@ void ApiController::Initialize()
 	GetModuleFileName(hModule, szFolder, sizeof(szFolder));
 	m_workingFolderName = szFolder;
 	m_workingFolderName = m_workingFolderName.Left(m_workingFolderName.ReverseFind(_T('\\')));
-	
-	// load sync settings
-	/*CString settingsFile = m_workingFolderName + _T("\\SyncSetting2.xml");
-	flashUI->CallFunction(_T("<invoke name='FL_loadSyncSetting'><arguments><string>") + settingsFile + _T("</string></arguments></invoke>"));
-	flashUI->CallFunction(_T("<invoke name='FL_initUI'><arguments><string></string></arguments></invoke>"));*/
+
+	// create download directory and xml
+	m_downloadDirectory = m_workingFolderName + _T("\\Download\\");
+	m_downloadXml = m_downloadDirectory +  _T("downloads.xml");
+	m_downloadDoc = new TiXmlDocument();
+			
+	DWORD attribs = ::GetFileAttributes(m_downloadDirectory);
+	if (attribs == INVALID_FILE_ATTRIBUTES ||
+		!(attribs & FILE_ATTRIBUTE_DIRECTORY)) {
+			::CreateDirectory(m_downloadDirectory, NULL);
+	}
+	flashUI->CallFunction(_T("<invoke name='FL_setDownloadDirectory'><arguments><string>") + m_downloadDirectory + _T("</string></arguments></invoke>"));
+
+	attribs = ::GetFileAttributes(m_downloadXml);
+	if (attribs == INVALID_FILE_ATTRIBUTES ||
+		!(attribs & FILE_ATTRIBUTE_NORMAL)) {
+			TiXmlDeclaration * xmlDec = new TiXmlDeclaration("1.0", "UTF-8", "yes");
+			m_downloadDoc->LinkEndChild(xmlDec);
+			TiXmlElement * element = new TiXmlElement("Downloads");
+			m_downloadDoc->LinkEndChild(element);
+			m_downloadDoc->SaveFile(CT2CA(m_downloadXml));
+	}
+	else {
+		m_downloadDoc->LoadFile(CT2CA(m_downloadXml), TIXML_ENCODING_UTF8);
+	}
 }
 
-/* 10 digits + 1 sign + 1 trailing nul */
-static char buf[12];
-char *itoa2(int i)
+void ApiController::Exit()
 {
-        char *pos = buf + sizeof(buf) - 1;
-        unsigned int u;
-        int negative = 0;
-
-        if (i < 0) {
-                negative = 1;
-                u = ((unsigned int)(-(1+i))) + 1;
-        } else {
-                u = i;
-        }
-
-        *pos = 0;
-
-        do {
-                *--pos = '0' + (u % 10);
-                u /= 10;
-        } while (u);
-
-        if (negative) {
-                *--pos = '-';
-        }
-
-        return pos;
+	//delete m_downloadDoc;
 }
 
 void ApiController::UpdateList()
@@ -113,9 +108,9 @@ void ApiController::UpdateList()
 				else{
 					UINT32 blockSize, freeSize, diskSize;
 					if (fsDiskFreeSpace(driveNo, &blockSize, &freeSize, &diskSize) == FS_OK){
-						CString free(itoa2((INT)freeSize/1024));
-						CString total(itoa2((INT)diskSize/1024));
-						flashUI->CallFunction(_T("<invoke name='FL_setDiskVolumnStatus'><arguments><string>") + free + _T(",") + total + _T("</string></arguments></invoke>"));
+						CString request;
+						request.Format(_T("<invoke name='FL_setDiskVolumnStatus'><arguments><string>%i,%i</string></arguments></invoke>"), (INT)freeSize/1024, (INT)diskSize/1024);
+						flashUI->CallFunction(request);
 					}
 					flashUI->CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>1</string></arguments></invoke>"));
 				}
@@ -212,9 +207,6 @@ void ApiController::ScanUsbDisk()
 			}
 		}
 	}
-
-	//if (found == FALSE)
-	//	flashUI->CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>0</string></arguments></invoke>"));
 }
 
 int CALLBACK BrowseCallbackProc(HWND hWnd, UINT uMsg, LPARAM lParam, LPARAM lpData)
@@ -251,8 +243,6 @@ CString ApiController::BrowsePC()
 				// At this point pszBuffer contains the selected path
 				ret = m_pszBuffer;
 				//m_pcLocalHostName = m_pszBuffer;
-				//flashUI.CallFunction(_T("<invoke name='FL_setPCPath'><arguments><string>") + m_pcLocalHostName + _T("</string></arguments></invoke>"));
-				//GetPCLocalHostList();
 			}
 
 			// Free the PIDL allocated by SHBrowseForFolder.
@@ -360,8 +350,6 @@ CString ApiController::GetDeviceFileContent(CString filePath)
 	fsCloseFile(hdl);
 
 	CString cstr_v = b64::UTF8ToCString(m_pu8xmlBuffer, (unsigned int) nBytes);
-
-	
 	return cstr_v;
 }
 
@@ -400,11 +388,7 @@ CString ApiController::GetLocalAppNames(CString localDirectoryPath)
 	CFileFind finder;
 	TCHAR fileSizeBuf[16];
 	BOOL found = finder.FindFile(localDirectoryPath + _T("\\") + _T("*.png"));
-	if (!found)
-	{
-		finder.Close();
-		return _T("");
-	}
+	if (!found){ finder.Close(); return _T(""); }
 
 	CString ret_value;
 	while(found)
