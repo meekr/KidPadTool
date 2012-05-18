@@ -25,7 +25,7 @@
 CKidPadToolDlg::CKidPadToolDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CKidPadToolDlg::IDD, pParent)
 {
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hIcon = AfxGetApp()->LoadIcon(IDI_ICON1);
 }
 
 void CKidPadToolDlg::DoDataExchange(CDataExchange* pDX)
@@ -66,6 +66,7 @@ BOOL CKidPadToolDlg::OnInitDialog()
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
+	SetWindowText(_T("童伴1号"));
 
 	// TODO: 在此添加额外的初始化代码
 	TCHAR szFolder[MAX_PATH * 2];

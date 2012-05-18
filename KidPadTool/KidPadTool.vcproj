@@ -313,6 +313,10 @@
 				RelativePath=".\res\KidPadTool.rc2"
 				>
 			</File>
+			<File
+				RelativePath="C:\talentech.ico"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\ReadMe.txt"
