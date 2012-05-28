@@ -173,3 +173,12 @@ void CKidPadToolDlg::OnSize(UINT nType, int cx, int cy)
 	if (NULL != flashUI.GetSafeHwnd())
 		flashUI.MoveWindow(0, 0, cx, cy);
 }
+
+BOOL CKidPadToolDlg::PreTranslateMessage(MSG *pMsg)
+{
+	if((WM_RBUTTONDOWN == pMsg->message) || (WM_RBUTTONDBLCLK == pMsg->message))
+	{
+		return TRUE;
+	}
+	return CDialog::PreTranslateMessage(pMsg);
+}
