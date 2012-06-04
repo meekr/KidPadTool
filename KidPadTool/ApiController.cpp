@@ -75,6 +75,7 @@ void ApiController::UpdateList()
 
 				CString strName;
 				usbDiskDriver->getProductId(m_programUsbDiskName);
+				TRACE(m_programUsbDiskName+_T(":________\n"));
 				strName = _T("nand1-2");
 				if ( wcsstr( m_programUsbDiskName, strName ) != 0 )
 				{
@@ -317,10 +318,24 @@ void ApiController::DispatchFlashCall(const char* request, const char* args)
 		CString str(args);
 		CancelDownload(str);
 	}
+	else if (strcmp(request, "F2C_deleteAppOnPc") == 0) {
+		CString str(args);
+		DeleteAppOnPc(str);
+	}
+	else if (strcmp(request, "F2C_import2Library") == 0) {
+		
+	}
 	else if (strcmp(request, "F2C_TRACE") == 0) {
 		TRACE(args);
 		TRACE(_T("\n"));
 	}
+}
+
+BOOL ApiController::DeleteAppOnPc(CString appName)
+{
+	::DeleteFile(m_downloadDirectory + _T('\\') + appName + _T(".npk"));
+	::DeleteFile(m_downloadDirectory + _T('\\') + appName + _T(".png"));
+	return TRUE;
 }
 
 CString ApiController::GetDeviceFileContent(CString filePath)
@@ -570,7 +585,7 @@ BOOL ApiController::DeleteAppNodeOnDeviceXml(CString appCategoryXml, CString app
 	INT nWriteCnt;
 	INT len = strlen(ret);
 	hdl2 = fsWriteFile(hdl, (UINT8 *)ret, strlen(ret), &nWriteCnt);
-	if (hdl2 != FS_OK )
+	if (hdl2 != FS_OK)
 	{
 		hdl2 = fsCloseFile(hdl);
 		MessageBox(ownerWindow->m_hWnd, _T("Write device temp XML failed, or disk full"), _T("Error"), MB_OK|MB_ICONSTOP );
@@ -585,9 +600,9 @@ BOOL ApiController::InstallNPK(CString npkFile)
 	CString appName = npkFile.Right(npkFile.GetLength() - npkFile.ReverseFind('\\') - 1);
 	appName = appName.Left(appName.GetLength() - 4);
 	CString workFolder = npkFile.Left(npkFile.ReverseFind('\\'));
-	CString tempFolder = workFolder + _T("\\_temp_") + appName;
+	CString tempFolder = workFolder + _T("\\") + appName;
 	CString decompressedXmlFile;
-	CString appCategoryXml, listElementName, programElementName;
+	CString appCategoryXml;
 	
 
 	/*********************************
@@ -627,56 +642,22 @@ BOOL ApiController::InstallNPK(CString npkFile)
 	::CloseHandle(pi.hProcess);
 	::CloseHandle(pi.hThread);
 
-	CFileFind finder;
-	BOOL found = finder.FindFile(tempFolder + _T("\\") + _T("*.*"));
-	if (!found)
-	{
-		finder.Close();
-		return false;
-	}
-
-	while (found)
-	{
-		found = finder.FindNextFile();
-		if (finder.IsDots())
-			continue;
-
-		if (finder.IsDirectory())
-		{
-			decompressedXmlFile = tempFolder + _T("\\") + finder.GetFileName() + _T("\\install.xml");
-		}
-		else
-		{
-			MessageBox(ownerWindow->m_hWnd, _T("Wrong NPK file"), _T("Error"), MB_OK|MB_ICONSTOP);
-			finder.Close();
-			return false;
-		}
-	}
-	finder.Close();
-
+	decompressedXmlFile = tempFolder + _T("\\install.xml");
+	
 	/*********************************
 	*** get deploy type **************
 	*********************************/
 	TiXmlDocument doc;
     doc.LoadFile(CT2CA(decompressedXmlFile), TIXML_ENCODING_UTF8);
     TiXmlHandle docHandle(&doc);
-	TiXmlElement* elm = docHandle.FirstChild("install").FirstChild("program").FirstChildElement("deployType").ToElement();
-	const char *deployType = elm->GetText();
-	if (strcmp(deployType, "game") == 0) {
-		appCategoryXml = m_driveTempName + _T("\\game\\gameList.xml");
-		listElementName = _T("gameList");
-		programElementName = _T("game");
-	}
-	else if (strcmp(deployType, "story") == 0) {
-		appCategoryXml = m_driveTempName + _T("\\story\\storyList.xml");
-		listElementName = _T("storyList");
-		programElementName = _T("story");
-	}
-	else if (strcmp(deployType, "app") == 0) {
-		appCategoryXml = m_driveTempName + _T("\\installed\\appList.xml");
-		listElementName = _T("appList");
-		programElementName = _T("app");
-	}
+	TiXmlElement* elm = docHandle.FirstChild("install").FirstChild("program").FirstChildElement("uri").ToElement();
+	const char *uri = elm->GetText();
+	CString str = CA2CT(uri);
+	str = str.Left(4);
+	if (str == "yzyx")
+		str = "zyyx";
+	appCategoryXml = m_driveTempName + _T("\\book\\storyList_") + str + _T(".xml");
+
     
 	/*********************************
 	*** reject if already exists *****
@@ -694,13 +675,11 @@ BOOL ApiController::InstallNPK(CString npkFile)
 	*** update install xml ***********
 	*********************************/
 	program_t program;
-	InsertXMLBufferElement(decompressedXmlFile, appCategoryXml, listElementName, programElementName, program);
+	InsertXMLBufferElement(decompressedXmlFile, appCategoryXml, program);
 
-	CString srcName = decompressedXmlFile.Left(decompressedXmlFile.ReverseFind(_T('\\'))) + _T('\\') + program.name;
-	CString folder(deployType);
-	CString destName = m_driveTempName + _T("\\") + folder + _T("\\") + appName;
+	CString destName = m_driveTempName + _T("\\book\\") + appName;
 	
-	if (!CopyDirectory(srcName, destName))
+	if (!CopyDirectory(tempFolder, destName))
 	{
 		MessageBox(ownerWindow->m_hWnd, _T("Copy to device failed"), _T("Error"), MB_OK|MB_ICONSTOP);
 		return false;
@@ -748,7 +727,7 @@ BOOL ApiController::IsApplicationInstalled(CString appName, CString appCategoryX
 	return false;
 }
 
-BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryXml, CString listElementName, CString programElementName, program_t& program)
+BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryXml, program_t& program)
 {
 	TiXmlDocument doc;
 	doc.LoadFile(CT2CA(xmlFile), TIXML_ENCODING_UTF8);
@@ -768,7 +747,8 @@ BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryX
 	for (element = programElement->FirstChildElement(); element; element = element->NextSiblingElement())
 	{
 		if (strcmp(element->Value(), "name") == 0) {
-			memcpy(program.name, element->GetText(), strlen(element->GetText())+1);
+			const char* nn = element->GetText();
+			memcpy(program.name, nn, strlen(element->GetText())+1);
 		}
 		else if (strcmp(element->Value(), "icon") == 0) {
 			memcpy(program.icon, element->GetText(), strlen(element->GetText())+1);
@@ -803,39 +783,29 @@ BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryX
 		}
 	}
 
-	CString installName(program.entry);
-	if (installName.ReverseFind('.') > -1)
-		installName = installName.Left(installName.ReverseFind('.'));
-	installName = installName.Right(installName.GetLength() - installName.ReverseFind('/') - 1);
+	CString appName(program.name);
+	appName = b64::UTF8ToCString(program.name, strlen(program.name));
 
-	CString cs;
-	cs.Format(_T("%S"), program.icon);
-	cs = installName + _T('/') + cs;
-	CT2CA psz1 (cs);
-	memcpy(program.icon, psz1, strlen(psz1)+1);
-	
-	cs.Format(_T("/body/%S"), program.entry);
-	cs = installName + cs;
-	CT2CA psz2 (cs);
-	memcpy(program.entry, psz2, strlen(psz2)+1);
+	CString iconStr = appName + _T('/') + b64::UTF8ToCString(program.icon, strlen(program.icon));
+	CString entryStr = appName + _T("/body/") + b64::UTF8ToCString(program.entry, strlen(program.entry));
 
 	// read xml and export to program struct
-	TiXmlElement* story = new TiXmlElement( CT2CA(programElementName, CP_UTF8) );
+	TiXmlElement* story = new TiXmlElement("story");
 
 	TiXmlElement* name = new TiXmlElement("name" );
 	TiXmlText* nameText = new TiXmlText(program.name);
 	TiXmlElement* icon = new TiXmlElement( "icon" );
-	TiXmlText* iconText = new TiXmlText(program.icon);
+	TiXmlText* iconText = new TiXmlText(CW2A(iconStr, CP_UTF8));
 	TiXmlElement* type = new TiXmlElement( "type" );
 	TiXmlText* typeText = new TiXmlText(program.type);
 	TiXmlElement* entry = new TiXmlElement( "entry" );
-	TiXmlText* entryText = new TiXmlText(program.entry);
+	TiXmlText* entryText = new TiXmlText(CW2A(entryStr, CP_UTF8));
 	TiXmlElement* deployType = new TiXmlElement( "deployType" );
 	TiXmlText* deployTypeText = new TiXmlText(program.deployType);
 
 	name->LinkEndChild( nameText );
 	story->LinkEndChild( name );
-	icon->LinkEndChild( iconText );
+	icon->LinkEndChild(iconText);
 	story->LinkEndChild( icon );
 	type->LinkEndChild( typeText );
 	story->LinkEndChild( type );
@@ -846,29 +816,18 @@ BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryX
 
 	if (program.hasSecurity)
 	{
-		cs.Format(_T("%S"), program.securityImage);
-		cs = installName + _T('/') + cs;
-		CT2CA psz3 (cs);
-		memcpy(program.securityImage, psz3, strlen(psz3)+1);
-
-		cs.Format(_T("%S"), program.securityPassword);
-		cs = installName + _T('/') + cs;
-		CT2CA psz4 (cs);
-		memcpy(program.securityPassword, psz4, strlen(psz4)+1);
-
-		char mountPointStr[255];
-		cs = installName + _T("/body/");
-		CT2CA psz5 (cs);
-		memcpy(mountPointStr, psz5, strlen(psz5)+1);
+		CString imageStr = appName + _T('/') + program.securityImage;
+		CString passwdStr = _T("temppass.bin");
+		CString mountStr = appName + _T("/body/");
 		
 		TiXmlElement* security = new TiXmlElement( "security" );
 
 		TiXmlElement* image = new TiXmlElement( "image" );
-		TiXmlText* imageText = new TiXmlText(program.securityImage);
+		TiXmlText* imageText = new TiXmlText(CW2A(imageStr, CP_UTF8));
 		TiXmlElement* passwd = new TiXmlElement( "passwd" );
-		TiXmlText* passwdText = new TiXmlText(program.securityPassword);
+		TiXmlText* passwdText = new TiXmlText(CW2A(passwdStr, CP_UTF8));
 		TiXmlElement* mountPoint = new TiXmlElement( "mountPoint" );
-		TiXmlText* mountPointText = new TiXmlText(mountPointStr);
+		TiXmlText* mountPointText = new TiXmlText(CW2A(mountStr, CP_UTF8));
 
 		image->LinkEndChild( imageText );
 		security->LinkEndChild( image );
@@ -880,7 +839,7 @@ BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryX
 		story->LinkEndChild( security );
 	}
 
-	if (program.bgColor)
+	if (program.bgColor && strlen(program.bgColor)>0)
 	{
 		TiXmlElement* bgColor = new TiXmlElement( "bgColor" );
 		TiXmlText* bgColorText = new TiXmlText(program.bgColor);
@@ -889,7 +848,7 @@ BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryX
 		story->LinkEndChild( bgColor );
 	}
 
-	if (program.asMain)
+	if (program.asMain && strlen(program.asMain)>0)
 	{
 		TiXmlElement* asMain = new TiXmlElement( "asMain" );
 		TiXmlText* asMainText = new TiXmlText(program.asMain);
@@ -908,7 +867,6 @@ BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryX
     doc2.Accept(&printer);
     const char* ret = printer.CStr();
 	
-
 	int hdl, hdl2;
 	hdl = hdl2 = 0;
 
@@ -917,7 +875,7 @@ BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryX
 	INT nWriteCnt;
 	INT len = strlen(ret);
 	hdl2 = fsWriteFile(hdl, (UINT8 *)ret, strlen(ret), &nWriteCnt);
-	if (hdl2 != FS_OK )
+	if (hdl2 != FS_OK)
 	{
 		hdl2 = fsCloseFile(hdl);
 		MessageBox(ownerWindow->m_hWnd, _T("Write device temp XML failed, or disk full"), _T("Error"), MB_OK|MB_ICONSTOP );
@@ -926,8 +884,6 @@ BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryX
 	fsCloseFile(hdl);
 
 	CString content = GetDeviceFileContent(appCategoryXml);
-
-
 	return true;
 }
 

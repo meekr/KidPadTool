@@ -49,11 +49,12 @@ public:
 	CString GetDeviceFileContent(CString filePath);
 	CString GetDeviceIconBase64(CString iconFilePath);
 	BOOL DeleteAppOnDevice(CString appDirectoryPaths);
+	BOOL DeleteAppOnPc(CString appName);
 	BOOL DeleteDirectoryOnDevice(CString directory);
 	BOOL DeleteAppNodeOnDeviceXml(CString appCategoryXml, CString appName);
 	BOOL InstallNPK(CString npkFile);
 	BOOL IsApplicationInstalled(CString appName, CString appCategoryXml);
-	BOOL InsertXMLBufferElement(CString xmlFile, CString appCategoryXml, CString listElementName, CString programElementName, program_t& program);
+	BOOL InsertXMLBufferElement(CString xmlFile, CString appCategoryXml, program_t& program);
 	BOOL CopyDirectory(CString srcName, CString destName);
 	BOOL SaveFileFromBase64(CString base64String, CString filePath);
 	BOOL CancelDownload(CString appPathWithoutExtention);
