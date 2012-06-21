@@ -174,11 +174,20 @@ void CKidPadToolDlg::OnSize(UINT nType, int cx, int cy)
 		flashUI.MoveWindow(0, 0, cx, cy);
 }
 
-BOOL CKidPadToolDlg::PreTranslateMessage(MSG *pMsg)
+BOOL CKidPadToolDlg::PreTranslateMessage(MSG *pmsg)
 {
-	if((WM_RBUTTONDOWN == pMsg->message) || (WM_RBUTTONDBLCLK == pMsg->message))
+	if(pmsg->message == WM_KEYDOWN || pmsg->message == WM_CHAR)
+	{
+		SendMessage(pmsg->message,pmsg->wParam,pmsg->lParam);
+	}
+	else if((WM_RBUTTONDOWN == pmsg->message) || (WM_RBUTTONDBLCLK == pmsg->message))
 	{
 		return TRUE;
 	}
-	return CDialog::PreTranslateMessage(pMsg);
+	else
+	{
+		return CDialog::PreTranslateMessage(pmsg);
+	}
+	
+	return CDialog::PreTranslateMessage(pmsg);
 }

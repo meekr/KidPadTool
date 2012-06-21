@@ -52,12 +52,15 @@ public:
 	BOOL DeleteAppOnPc(CString appName);
 	BOOL DeleteDirectoryOnDevice(CString directory);
 	BOOL DeleteAppNodeOnDeviceXml(CString appCategoryXml, CString appName);
-	BOOL InstallNPK(CString npkFile);
+	CString InstallNPK(CString npkFile);
 	BOOL IsApplicationInstalled(CString appName, CString appCategoryXml);
 	BOOL InsertXMLBufferElement(CString xmlFile, CString appCategoryXml, program_t& program);
 	BOOL CopyDirectory(CString srcName, CString destName);
 	BOOL SaveFileFromBase64(CString base64String, CString filePath);
 	BOOL CancelDownload(CString appPathWithoutExtention);
+	BOOL Import2Library();
+	CString GetFirmwareVersion();
+	BOOL UpdateFirmware(CString zipFilePath);
 	void DeletePcDirectory(CString szPath);
 	void DispatchFlashCommand(CString command, CString args);
 	void DispatchFlashCall(const char* request, const char* args);

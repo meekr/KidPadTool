@@ -81,6 +81,22 @@ void ApiController::UpdateList()
 				{
 					m_driveTempName = driveName;
 					m_driveNANDName = driveName;
+
+
+					// talentech added
+					strName = _T("Null");
+					if (wcsstr( m_programUsbDiskName, strName ) != 0){
+						flashUI->CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>0</string></arguments></invoke>"));
+					}
+					else{
+						UINT32 blockSize, freeSize, diskSize;
+						if (fsDiskFreeSpace(driveNo, &blockSize, &freeSize, &diskSize) == FS_OK){
+							CString request;
+							request.Format(_T("<invoke name='FL_setDiskVolumnStatus'><arguments><string>%i,%i</string></arguments></invoke>"), (INT)freeSize/1024, (INT)diskSize/1024);
+							flashUI->CallFunction(request);
+						}
+						flashUI->CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>1</string></arguments></invoke>"));
+					}
 				}
 				strName = _T("USB Card Reader");
 				if ( wcsstr( m_programUsbDiskName, strName ) != 0 )
@@ -94,27 +110,14 @@ void ApiController::UpdateList()
 					m_driveTempName = driveName;
 					m_driveNANDName = driveName;
 				}
-				strName = _T("sd");
+				/*strName = _T("sd");
 				if ( wcsstr( m_programUsbDiskName, strName ) != 0 )
 				{
 					m_driveTempName = driveName;
 					m_driveSDName = driveName;
-				}
+				}*/
 
-				// talentech added
-				strName = _T("Null");
-				if (wcsstr( m_programUsbDiskName, strName ) != 0){
-					flashUI->CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>0</string></arguments></invoke>"));
-				}
-				else{
-					UINT32 blockSize, freeSize, diskSize;
-					if (fsDiskFreeSpace(driveNo, &blockSize, &freeSize, &diskSize) == FS_OK){
-						CString request;
-						request.Format(_T("<invoke name='FL_setDiskVolumnStatus'><arguments><string>%i,%i</string></arguments></invoke>"), (INT)freeSize/1024, (INT)diskSize/1024);
-						flashUI->CallFunction(request);
-					}
-					flashUI->CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>1</string></arguments></invoke>"));
-				}
+				
 			}
 
 			partition = partition->ptNextPart;
@@ -299,8 +302,7 @@ void ApiController::DispatchFlashCall(const char* request, const char* args)
 	}
 	else if (strcmp(request, "F2C_installApp") == 0) {
 		CString cs("<string>");
-		if (InstallNPK(CString(args)))
-			cs += CString("1");
+		cs += InstallNPK(CString(args));
 		cs += CString("</string>");
 		flashUI->SetReturnValue((LPCTSTR)cs);
 	}
@@ -323,12 +325,50 @@ void ApiController::DispatchFlashCall(const char* request, const char* args)
 		DeleteAppOnPc(str);
 	}
 	else if (strcmp(request, "F2C_import2Library") == 0) {
-		
+		Import2Library();
+	}
+	else if (strcmp(request, "F2C_getFirmwareVersion") == 0) {
+		CString cs("<string>");
+		cs += GetFirmwareVersion();
+		cs += CString("</string>");
+		flashUI->SetReturnValue((LPCTSTR)cs);
+	}
+	else if (strcmp(request, "F2C_updateFirmware") == 0) {
+		CString str(args);
+		CString cs("<string>");
+		if (UpdateFirmware(str))
+			cs += CString("1");
+		cs += CString("</string>");
+		flashUI->SetReturnValue((LPCTSTR)cs);
 	}
 	else if (strcmp(request, "F2C_TRACE") == 0) {
 		TRACE(args);
 		TRACE(_T("\n"));
 	}
+}
+
+BOOL ApiController::Import2Library()
+{
+	CString folder = BrowsePC();
+	if (folder && folder.GetLength() > 0)
+	{
+		CFileFind finder;
+		BOOL found = finder.FindFile(folder + _T("\\*.npk"));
+		if (!found){ finder.Close(); return FALSE; }
+
+		while(found)
+		{
+			found = finder.FindNextFile();
+
+			if (finder.IsDots())
+				continue;
+
+			CString npkFile = finder.GetFilePath();
+			InstallNPK(npkFile);
+		}
+		finder.Close();
+	}
+	return TRUE;
 }
 
 BOOL ApiController::DeleteAppOnPc(CString appName)
@@ -462,8 +502,8 @@ BOOL ApiController::DeleteAppOnDevice(CString appDirectoryPaths)
 	*** delete files from device ****
 	*********************************/
 	if (DeleteDirectoryOnDevice(appDirectory) == false) {
-		MessageBox(ownerWindow->m_hWnd, _T("Delete device program failed"), _T("Uninstall Error"), MB_OK|MB_ICONSTOP);
-		return false;
+		MessageBox(ownerWindow->m_hWnd, _T("删除设备上内容\"") + appName + _T("\"失败"), _T("删除错误"), MB_OK|MB_ICONSTOP);
+		return FALSE;
 	}
 
 	/*********************************
@@ -471,7 +511,7 @@ BOOL ApiController::DeleteAppOnDevice(CString appDirectoryPaths)
 	*********************************/
 	DeleteAppNodeOnDeviceXml(appCategoryXml, appName);
 
-	return true;
+	return TRUE;
 }
 
 BOOL ApiController::DeleteDirectoryOnDevice(CString directory) {
@@ -483,8 +523,9 @@ BOOL ApiController::DeleteDirectoryOnDevice(CString directory) {
 	DWORD err = fsFindFirst((CHAR *)(LPCWSTR)(directory + _T('\\')), NULL, &fileFind);
 	if (err != 0)
 	{
-		MessageBox(ownerWindow->m_hWnd, _T("Cannot find the device directory \"") + directory, _T("Error"), MB_OK|MB_ICONSTOP);
-		return false;
+		fsFindClose(&fileFind);
+		//MessageBox(ownerWindow->m_hWnd, _T("找不到设备上的\"") + directory + _T("\"文件夹"), _T("错误"), MB_OK|MB_ICONSTOP);
+		return TRUE;
 	}
 
 	do
@@ -497,13 +538,13 @@ BOOL ApiController::DeleteDirectoryOnDevice(CString directory) {
 		tempName = directory + _T('\\') + (LPCWSTR)fileFind.suLongName;
 		int l = tempName.GetLength();
 
-		if (fileFind.ucAttrib == A_DIR)
+		if (fileFind.ucAttrib & A_DIR)
 		{
 			if (DeleteDirectoryOnDevice(tempName) == false)
 			{
 				// may need error handle here
 				err = fsFindClose(&fileFind);
-				return false;
+				return FALSE;
 			}
 		}
 		else
@@ -512,8 +553,9 @@ BOOL ApiController::DeleteDirectoryOnDevice(CString directory) {
 			err = fsDeleteFile((CHAR *)(LPCWSTR)tempName, NULL);
 			if (err != FS_OK)
 			{
-				MessageBox(ownerWindow->m_hWnd, _T("Delete file \"") + tempName + _T("\" failed on device"), _T("Error"), MB_OK|MB_ICONSTOP );
-				return false;
+				MessageBox(ownerWindow->m_hWnd, _T("删除设备上的\"")+tempName+_T("\"文件失败"), _T("错误"), MB_OK|MB_ICONSTOP );
+				fsFindClose(&fileFind);
+				return FALSE;
 			}
 		}
 	}
@@ -525,10 +567,10 @@ BOOL ApiController::DeleteDirectoryOnDevice(CString directory) {
 	err = fsRemoveDirectory((CHAR *)(LPCWSTR)directory, NULL);
 	if (err != FS_OK)
 	{
-		MessageBox(ownerWindow->m_hWnd, _T("Delete directory \"") + directory + _T("\" failed on device"), _T("Error"), MB_OK|MB_ICONSTOP );
-		return false;
+		MessageBox(ownerWindow->m_hWnd, __T("删除设备上的\"")+directory+_T("\"文件夹失败"), _T("错误"), MB_OK|MB_ICONSTOP );
+		return FALSE;
 	}
-	return true;
+	return TRUE;
 }
 
 BOOL ApiController::DeleteAppNodeOnDeviceXml(CString appCategoryXml, CString appName)
@@ -547,8 +589,8 @@ BOOL ApiController::DeleteAppNodeOnDeviceXml(CString appCategoryXml, CString app
 	node = listElement->FirstChildElement();
 	if (!node)
 	{
-		MessageBox(ownerWindow->m_hWnd, _T("No installed programs"), _T("Info"), MB_OK );
-		return false;
+		MessageBox(ownerWindow->m_hWnd, _T("没有任何安装的内容"), _T("信息"), MB_OK );
+		return TRUE;
 	}
 
 	CString tempName;
@@ -569,7 +611,10 @@ BOOL ApiController::DeleteAppNodeOnDeviceXml(CString appCategoryXml, CString app
 		}
 	}
 	if (found == FALSE)
+	{
 		TRACE(_T("found no match node for ") + appName + _T("!!!\n"));
+		return TRUE;
+	}
 
 	listElement->RemoveChild(xElement);
 
@@ -587,15 +632,15 @@ BOOL ApiController::DeleteAppNodeOnDeviceXml(CString appCategoryXml, CString app
 	hdl2 = fsWriteFile(hdl, (UINT8 *)ret, strlen(ret), &nWriteCnt);
 	if (hdl2 != FS_OK)
 	{
-		hdl2 = fsCloseFile(hdl);
-		MessageBox(ownerWindow->m_hWnd, _T("Write device temp XML failed, or disk full"), _T("Error"), MB_OK|MB_ICONSTOP );
-		return false;
+		fsCloseFile(hdl);
+		MessageBox(ownerWindow->m_hWnd, _T("写XML文件出错，可能磁盘已满"), _T("错误"), MB_OK|MB_ICONSTOP );
+		return FALSE;
 	}
 	fsCloseFile(hdl);
-	return true;
+	return TRUE;
 }
 
-BOOL ApiController::InstallNPK(CString npkFile)
+CString ApiController::InstallNPK(CString npkFile)
 {
 	CString appName = npkFile.Right(npkFile.GetLength() - npkFile.ReverseFind('\\') - 1);
 	appName = appName.Left(appName.GetLength() - 4);
@@ -606,12 +651,12 @@ BOOL ApiController::InstallNPK(CString npkFile)
 	
 
 	/*********************************
-	*** upcompress to temp folder ****
+	*** uncompress to temp folder ****
 	*********************************/
 	if (!::CreateDirectory(tempFolder, NULL))
 	{
-		MessageBox(ownerWindow->m_hWnd, _T("Uncompress folder failed, working folder may exist, or disk may full"), _T("Error"), MB_OK|MB_ICONSTOP);
-		return false;
+		MessageBox(ownerWindow->m_hWnd, _T("创建\"") + appName + _T("\"临时目录失败，可能该文件夹已存在，或磁盘空间已满"), _T("Error"), MB_OK|MB_ICONSTOP);
+		return _T("");
 	}
 
 	STARTUPINFO si = { sizeof(STARTUPINFO) };
@@ -652,11 +697,13 @@ BOOL ApiController::InstallNPK(CString npkFile)
     TiXmlHandle docHandle(&doc);
 	TiXmlElement* elm = docHandle.FirstChild("install").FirstChild("program").FirstChildElement("uri").ToElement();
 	const char *uri = elm->GetText();
-	CString str = CA2CT(uri);
-	str = str.Left(4);
-	if (str == "yzyx")
-		str = "zyyx";
-	appCategoryXml = m_driveTempName + _T("\\book\\storyList_") + str + _T(".xml");
+	CString category = CA2CT(uri);
+	category = category.Left(4);
+	if (category == "yzyx")
+		category = "zyyx";
+	else if (category == "jyrz")
+		category = "jyrz1";
+	appCategoryXml = m_driveTempName + _T("\\book\\storyList_") + category + _T(".xml");
 
     
 	/*********************************
@@ -664,10 +711,10 @@ BOOL ApiController::InstallNPK(CString npkFile)
 	*********************************/
 	if (IsApplicationInstalled(appName, appCategoryXml))
 	{
-		MessageBox(ownerWindow->m_hWnd, _T("Application already installed"), _T("Error"), MB_OK|MB_ICONSTOP);
+		MessageBox(ownerWindow->m_hWnd, _T("应用\"") + appName + _T("\"已经安装在设备上"), _T("信息"), MB_OK|MB_ICONSTOP);
 		DeletePcDirectory(tempFolder);
 		::RemoveDirectory(tempFolder);
-		return false;
+		return category;
 	}
 
 	
@@ -681,15 +728,15 @@ BOOL ApiController::InstallNPK(CString npkFile)
 	
 	if (!CopyDirectory(tempFolder, destName))
 	{
-		MessageBox(ownerWindow->m_hWnd, _T("Copy to device failed"), _T("Error"), MB_OK|MB_ICONSTOP);
-		return false;
+		MessageBox(ownerWindow->m_hWnd, _T("将内容拷贝到设备失败"), _T("错误"), MB_OK|MB_ICONSTOP);
+		return _T("");
 	}
 
 	// delete files on pc
 	DeletePcDirectory(tempFolder);
 	::RemoveDirectory(tempFolder);
 
-	return true;
+	return category;
 }
 
 BOOL ApiController::IsApplicationInstalled(CString appName, CString appCategoryXml)
@@ -708,7 +755,7 @@ BOOL ApiController::IsApplicationInstalled(CString appName, CString appCategoryX
 	node = listElement->FirstChildElement();
 
 	if (!node)
-		return false;
+		return FALSE;
 
 	CString tempName;
 	// may enhance here, looply found name and deploytype
@@ -720,11 +767,10 @@ BOOL ApiController::IsApplicationInstalled(CString appName, CString appCategoryX
 		{
 			tempName = CA2CT(nameElement->GetText(), CP_UTF8);
 			if (tempName == appName)
-				return true;
+				return TRUE;
 		}
 	}
-
-	return false;
+	return FALSE;
 }
 
 BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryXml, program_t& program)
@@ -862,7 +908,8 @@ BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryX
 	TiXmlDocument doc2;
 	doc2.Parse(m_pu8xmlBuffer);
 	node = doc2.RootElement();
-	node->LinkEndChild( story );
+	//node->LinkEndChild( story );
+	node->InsertBeforeChild(doc2.RootElement()->FirstChildElement("story"), *story);
 	TiXmlPrinter printer;
     doc2.Accept(&printer);
     const char* ret = printer.CStr();
@@ -878,13 +925,13 @@ BOOL ApiController::InsertXMLBufferElement(CString xmlFile, CString appCategoryX
 	if (hdl2 != FS_OK)
 	{
 		hdl2 = fsCloseFile(hdl);
-		MessageBox(ownerWindow->m_hWnd, _T("Write device temp XML failed, or disk full"), _T("Error"), MB_OK|MB_ICONSTOP );
-		return false;
+		MessageBox(ownerWindow->m_hWnd, _T("写XML文件失败，请检查磁盘空间是否已满"), _T("错误"), MB_OK|MB_ICONSTOP );
+		return FALSE;
 	}
 	fsCloseFile(hdl);
 
 	CString content = GetDeviceFileContent(appCategoryXml);
-	return true;
+	return TRUE;
 }
 
 void ApiController::DeletePcDirectory(CString szPath)
@@ -933,12 +980,12 @@ BOOL ApiController::CopyDirectory(CString srcName, CString destName)
 
 	int err2;
 	int err = fsMakeDirectory( (CHAR *)(LPCWSTR)destName, NULL );
-	if ( err != FS_OK )
+	if (err != FS_OK)
 	{
-		if ( err != ERR_DIR_BUILD_EXIST )
+		if (err != ERR_DIR_BUILD_EXIST)
 		{
-			MessageBox(ownerWindow->m_hWnd, _T("Create directory \"") + destName + _T("\" failed, may existed on device or disk full"), _T("Error"), MB_OK|MB_ICONSTOP );
-			return false;
+			MessageBox(ownerWindow->m_hWnd, _T("在设备上创建\"") + destName + _T("\"文件夹失败，可能已经存在或设备磁盘空间已满"), _T("错误"), MB_OK|MB_ICONSTOP );
+			return FALSE;
 		}
 	}
 
@@ -954,7 +1001,7 @@ BOOL ApiController::CopyDirectory(CString srcName, CString destName)
 			if ( CopyDirectory( srcTempName, destTempName ) == FALSE )
 			{
 				FindClose( hwnd );
-				return false;
+				return FALSE;
 			}
 		}
 		else
@@ -970,8 +1017,8 @@ BOOL ApiController::CopyDirectory(CString srcName, CString destName)
 				if ( temptemp < 10240.0 )
 				{
 					FindClose( hwnd );
-					MessageBox(ownerWindow->m_hWnd, _T("Disk full"), _T("Error"), MB_OK|MB_ICONSTOP);
-					return false;
+					MessageBox(ownerWindow->m_hWnd, _T("磁盘已满"), _T("错误"), MB_OK|MB_ICONSTOP);
+					return FALSE;
 				}
 			}
 
@@ -981,8 +1028,8 @@ BOOL ApiController::CopyDirectory(CString srcName, CString destName)
 			if ( err < 0 )
 			{
 				FindClose( hwnd );
-				MessageBox(ownerWindow->m_hWnd, _T("Create \"") + suFileName + _T("\" failed, may existed on device or disk full"), _T("Error"), MB_OK|MB_ICONSTOP);
-				return false;
+				MessageBox(ownerWindow->m_hWnd, _T("在设备上创建\"") + suFileName + _T("\"文件失败，可能已经存在或设备磁盘空间已满"), _T("错误"), MB_OK|MB_ICONSTOP);
+				return FALSE;
 			}
 
 			BYTE buffer[4096];
@@ -993,8 +1040,8 @@ BOOL ApiController::CopyDirectory(CString srcName, CString destName)
 				{
 					err2 = fsCloseFile( err );
 					FindClose( hwnd );
-					MessageBox(ownerWindow->m_hWnd, srcTempName, _T("Open PC file failed"), MB_OK|MB_ICONSTOP );
-					return false;
+					MessageBox(ownerWindow->m_hWnd, srcTempName, _T("打开计算机上文件失败"), MB_OK|MB_ICONSTOP );
+					return FALSE;
 				}
 
 				DWORD dwBytesRemaining = (DWORD)file.GetLength();
@@ -1011,8 +1058,8 @@ BOOL ApiController::CopyDirectory(CString srcName, CString destName)
 						file.Close();
 						FindClose( hwnd );
 						err2 = fsCloseFile( err );
-						MessageBox(ownerWindow->m_hWnd, _T("Write \"") + suFileName + _T("\" failed, may disk full"), _T("Error"), MB_OK|MB_ICONSTOP );
-						return false;
+						MessageBox(ownerWindow->m_hWnd, _T("在设备上写\"") + suFileName + _T("\"文件失败，可能设备磁盘空间已满"), _T("错误"), MB_OK|MB_ICONSTOP );
+						return FALSE;
 					}
 					dwBytesRemaining -= nBytesRead;
 				}
@@ -1024,7 +1071,7 @@ BOOL ApiController::CopyDirectory(CString srcName, CString destName)
 				FindClose( hwnd );
 				MessageBox(ownerWindow->m_hWnd, pEx->m_strFileName, _T("Get length, read, or close PC file failed"), MB_OK|MB_ICONSTOP );
 				pEx->Delete();
-				return false;
+				return FALSE;
 			}
 
 			err2 = fsCloseFile( err );
@@ -1032,14 +1079,14 @@ BOOL ApiController::CopyDirectory(CString srcName, CString destName)
 			{
 				FindClose( hwnd );
 				MessageBox(ownerWindow->m_hWnd, _T("Close \"") + suFileName + _T("\" failed, may disk full"), _T("Error"), MB_OK|MB_ICONSTOP );
-				return false;
+				return FALSE;
 			}
 		}
 	}
 	while ( FindNextFile( hwnd, &info ) );
 
 	FindClose( hwnd );
-	return true;
+	return TRUE;
 }
 
 BOOL ApiController::SaveFileFromBase64(CString base64String, CString filePath)
@@ -1066,7 +1113,7 @@ BOOL ApiController::SaveFileFromBase64(CString base64String, CString filePath)
 	if( ::WriteFile(mhd , (LPCVOID)c_result ,len_result, &wlen , 0) == 0)
 	{
 		::CloseHandle(mhd);
-		return FALSE ;
+		return FALSE;
 	}
 
 	::CloseHandle(mhd);
@@ -1084,5 +1131,91 @@ BOOL ApiController::CancelDownload(CString appPathWithoutExtention)
 	{
 		::DeleteFile(appPathWithoutExtention + _T(".png"));
 	}
+	return TRUE;
+}
+
+CString ApiController::GetFirmwareVersion()
+{
+	if (m_driveTempName.GetLength() > 0) {
+		CString xmlFile = m_driveTempName + _T("\\builtIn\\ui.xml");
+		TiXmlDocument doc;
+		doc.LoadFile(CT2CA(xmlFile), TIXML_ENCODING_UTF8);
+
+		TiXmlElement *elm = doc.RootElement();
+		const char* ver = elm->Attribute("version");
+		return CA2CT(ver);
+	}
+	return _T("1.0");
+}
+
+BOOL ApiController::UpdateFirmware(CString zipFilePath)
+{
+	CString builtInPath = m_driveTempName + _T("\\builtIn");
+	CString decompressPath = m_downloadDirectory + _T("\\builtIn");
+
+	/***************************
+	** decompress builtIn.zip **
+	****************************/
+	STARTUPINFO si = { sizeof(STARTUPINFO) };
+	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.wShowWindow = SW_HIDE;
+	PROCESS_INFORMATION pi;
+	CString	strCmd;
+	strCmd.Format(_T("\"%s\\7za.exe\" x -o\"%s\" -y \"%s\""), m_workingFolderName, m_downloadDirectory, zipFilePath);
+	::CreateProcess( NULL, strCmd.AllocSysString(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+
+	while (1)
+	{
+		// Check if the shutdown event has been set, if so exit the thread
+		if (WAIT_OBJECT_0 == ::WaitForSingleObject(pi.hProcess, 0)) {
+			break;
+		}
+	}
+
+	while (1)
+	{
+		// Check if the shutdown event has been set, if so exit the thread
+		if (WAIT_OBJECT_0 == WaitForSingleObject(pi.hThread, 0)) {
+			break;
+		}
+	}
+
+	// Close process and thread handles.
+	::CloseHandle(pi.hProcess);
+	::CloseHandle(pi.hThread);
+
+
+	/***************************
+	** delete obsolete builtIn *
+	****************************/
+	if (DeleteDirectoryOnDevice(builtInPath) == false) {
+		MessageBox(ownerWindow->m_hWnd, _T("删除设备上系统文件失败"), _T("错误"), MB_OK|MB_ICONSTOP);
+
+		DeletePcDirectory(decompressPath);
+		::RemoveDirectory(decompressPath);
+		::DeleteFile(zipFilePath);
+
+		return FALSE;
+	}
+
+
+	/***************************
+	** copy builtIn to device **
+	****************************/
+	if (!CopyDirectory(m_downloadDirectory + _T("\\builtIn"), builtInPath))
+	{
+		MessageBox(ownerWindow->m_hWnd, _T("将系统文件拷贝到设备失败"), _T("错误"), MB_OK|MB_ICONSTOP);
+
+		DeletePcDirectory(decompressPath);
+		::RemoveDirectory(decompressPath);
+		::DeleteFile(zipFilePath);
+
+		return FALSE;
+	}
+
+	DeletePcDirectory(decompressPath);
+	::RemoveDirectory(decompressPath);
+	::DeleteFile(zipFilePath);
+
 	return TRUE;
 }
