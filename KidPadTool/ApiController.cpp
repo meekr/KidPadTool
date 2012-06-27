@@ -1138,12 +1138,19 @@ CString ApiController::GetFirmwareVersion()
 {
 	if (m_driveTempName.GetLength() > 0) {
 		CString xmlFile = m_driveTempName + _T("\\builtIn\\ui.xml");
-		TiXmlDocument doc;
-		doc.LoadFile(CT2CA(xmlFile), TIXML_ENCODING_UTF8);
 
-		TiXmlElement *elm = doc.RootElement();
-		const char* ver = elm->Attribute("version");
-		return CA2CT(ver);
+		
+		FILE_STAT_T stat;
+		CString s = m_driveTempName + _T("\\builtIn\\ui.xml");
+		INT nStatus = fsGetFileStatus(-1, (CHAR *)(LPCWSTR)s, NULL, &stat);
+		if (nStatus == 0)
+		{
+			CString cs = GetDeviceFileContent(s);
+			int start = cs.Find(_T("<version>")) + 9;
+			int end = cs.Find(_T("</version>"));
+			cs = cs.Right(cs.GetLength() - start);
+			return cs.Left(end - start);
+		}
 	}
 	return _T("1.0");
 }
