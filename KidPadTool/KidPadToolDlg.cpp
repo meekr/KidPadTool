@@ -14,8 +14,6 @@
 #define new DEBUG_NEW
 #endif
 
-#define WINDOW_WIDTH 1000
-#define WINDOW_HEIGHT 703
 
 // CKidPadToolDlg 对话框
 
@@ -66,7 +64,7 @@ BOOL CKidPadToolDlg::OnInitDialog()
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
-	SetWindowText(_T("童伴1号"));
+	SetWindowText(_T("E巧派"));
 
 	// TODO: 在此添加额外的初始化代码
 	TCHAR szFolder[MAX_PATH * 2];
@@ -76,9 +74,17 @@ BOOL CKidPadToolDlg::OnInitDialog()
 	m_workingFolderName = szFolder;
 	m_workingFolderName = m_workingFolderName.Left(m_workingFolderName.ReverseFind(_T('\\')));
 	
-	this->flashUI.LoadMovie(0, m_workingFolderName + "\\KidPadUI.swf");
+	this->flashUI.LoadMovie(0, m_workingFolderName + "\\EPadClient.swf");
 	CWnd::SetWindowPos(NULL, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SWP_NOZORDER);
 	this->flashUI.MoveWindow(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+
+	/*
+	// Set WS_EX_LAYERED on this window 
+	SetWindowLong(this->GetSafeHwnd(), GWL_EXSTYLE,
+	GetWindowLong(this->GetSafeHwnd(), GWL_EXSTYLE) | WS_EX_LAYERED);
+	// Make this window 70% alpha
+	SetLayeredWindowAttributes( 0, (255 * 70) / 100, LWA_ALPHA);
+	*/
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }

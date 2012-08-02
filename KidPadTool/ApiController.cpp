@@ -3,6 +3,7 @@
 #include "KidPadTool.h"
 #include "base64.h"
 #include "Base64Util.h"
+#include "KidPadTool.h"
 
 #ifdef	_DEMO_USE_STDUSBDISKDRIVER_
 #include "StdUsbDiskDriver.h"
@@ -110,14 +111,14 @@ void ApiController::UpdateList()
 					m_driveTempName = driveName;
 					m_driveNANDName = driveName;
 				}
-				/*strName = _T("sd");
+				/*
+				strName = _T("sd");
 				if ( wcsstr( m_programUsbDiskName, strName ) != 0 )
 				{
 					m_driveTempName = driveName;
 					m_driveSDName = driveName;
-				}*/
-
-				
+				}
+				*/
 			}
 
 			partition = partition->ptNextPart;
@@ -344,6 +345,25 @@ void ApiController::DispatchFlashCall(const char* request, const char* args)
 	else if (strcmp(request, "F2C_TRACE") == 0) {
 		TRACE(args);
 		TRACE(_T("\n"));
+	}
+	else if (strcmp(request, "F2C_importVideos") == 0) {
+		CString cs("<string>");
+		cs += ImportVideos();
+		cs += CString("</string>");
+		flashUI->SetReturnValue((LPCTSTR)cs);
+	}
+	else if (strcmp(request, "F2C_getLocalMediaPath") == 0) {
+		CString cs("<string>");
+		cs += BrowsePC();
+		cs += CString("</string>");
+		flashUI->SetReturnValue((LPCTSTR)cs);
+	}
+	else if (strcmp(request, "F2C_getLocalPictures") == 0) {
+		CString str(args);
+		CString cs("<string>");
+		cs += GetLocalPictures(str);
+		cs += CString("</string>");
+		flashUI->SetReturnValue((LPCTSTR)cs);
 	}
 }
 
@@ -1225,4 +1245,90 @@ BOOL ApiController::UpdateFirmware(CString zipFilePath)
 	::DeleteFile(zipFilePath);
 
 	return TRUE;
+}
+
+CString ApiController::ImportVideos()
+{
+	CFileDialog dlg( TRUE, NULL, NULL, OFN_ALLOWMULTISELECT,
+		_T("视频文件(*.avi;*.flv;*.mov;*.mpeg;*.mpg;*.mp4)|*.avi;*.flv;*.mov;*.mpeg;*.mpg;*.mp4|所有文件(*.*)|*.*||") );
+	if ( dlg.DoModal() == IDOK )
+	{
+		CString ret;
+		POSITION pos = dlg.GetStartPosition();
+		while (pos != NULL)
+		{
+			CString file = dlg.GetNextPathName(pos);
+			ret += file;
+			ret += ";";
+			
+			/*
+			STARTUPINFO si = { sizeof(STARTUPINFO) };
+			si.dwFlags = STARTF_USESHOWWINDOW;
+			si.wShowWindow = SW_HIDE;
+			PROCESS_INFORMATION pi;
+			CString	strCmd;
+			strCmd.Format(_T("ffmpeg -i -y %s -b:v 512k -s 480x272 %s"), file, );
+			::CreateProcess( NULL, strCmd.AllocSysString(), NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
+
+			while (1)
+			{
+				// Check if the shutdown event has been set, if so exit the thread
+				if (WAIT_OBJECT_0 == ::WaitForSingleObject(pi.hProcess, 0)) {
+					break;
+				}
+			}
+
+			while (1)
+			{
+				// Check if the shutdown event has been set, if so exit the thread
+				if (WAIT_OBJECT_0 == WaitForSingleObject(pi.hThread, 0)) {
+					break;
+				}
+			}
+
+			// Close process and thread handles.
+			::CloseHandle(pi.hProcess);
+			::CloseHandle(pi.hThread);
+			*/
+		}
+		return ret.Left(ret.GetLength()-1);
+	}
+	return _T("");
+}
+
+CString ApiController::GetLocalPictures(CString directory)
+{
+	CFileFind finder;
+	TCHAR fileSizeBuf[16];
+	// TODO: get multiple file extentions
+	BOOL found = finder.FindFile(directory + _T("\\") + _T("*.*"));
+	if (!found){ finder.Close(); return _T(""); }
+
+	CString ret_value;
+	CString extensions = _T("gif,jpg,jpeg,png,bmp");
+	while(found)
+	{
+		found = finder.FindNextFile();
+
+		if (finder.IsDots())
+			continue;
+
+		CString filename = finder.GetFileName();
+		CString extension = filename.Right(filename.GetLength() - filename.ReverseFind(_T('.')) - 1);
+		if (extensions.Find(extension) == -1)
+			continue;
+
+
+		_stprintf_s(fileSizeBuf, sizeof(fileSizeBuf) / sizeof(TCHAR), _T("%d"), finder.GetLength());
+		ret_value += finder.GetFilePath();
+		ret_value += _T("#");
+		ret_value += fileSizeBuf;
+		ret_value += ",";
+	}
+	finder.Close();
+
+	if (ret_value.GetLength() > 0)
+		ret_value = ret_value.Left(ret_value.GetLength() - 1);
+
+	return ret_value;
 }

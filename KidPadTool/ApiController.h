@@ -66,6 +66,9 @@ public:
 	void DispatchFlashCall(const char* request, const char* args);
 	void Exit();
 
+	CString ImportVideos();
+	CString GetLocalPictures(CString directory);
+
 protected:
 	CString m_workingFolderName;
 	CString m_programUsbDiskName;

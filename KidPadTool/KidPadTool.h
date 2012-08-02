@@ -22,6 +22,9 @@
 
 #include "FileSystem.h"
 
+#define WINDOW_WIDTH 978
+#define WINDOW_HEIGHT 618
+
 
 // CKidPadToolApp:
 // 有关此类的实现，请参阅 KidPadTool.cpp
