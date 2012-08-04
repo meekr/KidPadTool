@@ -15,6 +15,7 @@ public:
 	ApiController apiController;
 
 	CKidPadToolDlg(CWnd* pParent = NULL);	// 标准构造函数
+	void TestFunction01(void * p1, void * p2, void * p3);
 
 // 对话框数据
 	enum { IDD = IDD_KIDPADTOOL_DIALOG };
@@ -32,6 +33,7 @@ protected:
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
+	afx_msg BOOL OnCreate (LPCREATESTRUCT lpc) ;
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	afx_msg BOOL OnDeviceChange (UINT nEventType, DWORD_PTR dwData);
@@ -61,4 +63,6 @@ protected:
 
 public:
 	void FlashCallShockwaveflash1(LPCTSTR request);
+
+	CShockwaveflash1 CShockwaveflash0;
 };

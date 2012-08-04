@@ -365,6 +365,20 @@ void ApiController::DispatchFlashCall(const char* request, const char* args)
 		cs += CString("</string>");
 		flashUI->SetReturnValue((LPCTSTR)cs);
 	}
+	else if (strcmp(request, "F2C_getLocalAudios") == 0) {
+		CString str(args);
+		CString cs("<string>");
+		cs += GetLocalAudios(str);
+		cs += CString("</string>");
+		flashUI->SetReturnValue((LPCTSTR)cs);
+	}
+	else if (strcmp(request, "F2C_getLocalVideos") == 0) {
+		CString str(args);
+		CString cs("<string>");
+		cs += GetLocalVideos(str);
+		cs += CString("</string>");
+		flashUI->SetReturnValue((LPCTSTR)cs);
+	}
 }
 
 BOOL ApiController::Import2Library()
@@ -1172,7 +1186,7 @@ CString ApiController::GetFirmwareVersion()
 			return cs.Left(end - start);
 		}
 	}
-	return _T("1.0");
+	return _T("0.9");
 }
 
 BOOL ApiController::UpdateFirmware(CString zipFilePath)
@@ -1306,6 +1320,80 @@ CString ApiController::GetLocalPictures(CString directory)
 
 	CString ret_value;
 	CString extensions = _T("gif,jpg,jpeg,png,bmp");
+	while(found)
+	{
+		found = finder.FindNextFile();
+
+		if (finder.IsDots())
+			continue;
+
+		CString filename = finder.GetFileName();
+		CString extension = filename.Right(filename.GetLength() - filename.ReverseFind(_T('.')) - 1);
+		if (extensions.Find(extension) == -1)
+			continue;
+
+
+		_stprintf_s(fileSizeBuf, sizeof(fileSizeBuf) / sizeof(TCHAR), _T("%d"), finder.GetLength());
+		ret_value += finder.GetFilePath();
+		ret_value += _T("#");
+		ret_value += fileSizeBuf;
+		ret_value += ",";
+	}
+	finder.Close();
+
+	if (ret_value.GetLength() > 0)
+		ret_value = ret_value.Left(ret_value.GetLength() - 1);
+
+	return ret_value;
+}
+
+CString ApiController::GetLocalAudios(CString directory)
+{
+	CFileFind finder;
+	TCHAR fileSizeBuf[16];
+	// TODO: get multiple file extentions
+	BOOL found = finder.FindFile(directory + _T("\\") + _T("*.*"));
+	if (!found){ finder.Close(); return _T(""); }
+
+	CString ret_value;
+	CString extensions = _T("mp3,wav,wma");
+	while(found)
+	{
+		found = finder.FindNextFile();
+
+		if (finder.IsDots())
+			continue;
+
+		CString filename = finder.GetFileName();
+		CString extension = filename.Right(filename.GetLength() - filename.ReverseFind(_T('.')) - 1);
+		if (extensions.Find(extension) == -1)
+			continue;
+
+
+		_stprintf_s(fileSizeBuf, sizeof(fileSizeBuf) / sizeof(TCHAR), _T("%d"), finder.GetLength());
+		ret_value += finder.GetFilePath();
+		ret_value += _T("#");
+		ret_value += fileSizeBuf;
+		ret_value += ",";
+	}
+	finder.Close();
+
+	if (ret_value.GetLength() > 0)
+		ret_value = ret_value.Left(ret_value.GetLength() - 1);
+
+	return ret_value;
+}
+
+CString ApiController::GetLocalVideos(CString directory)
+{
+	CFileFind finder;
+	TCHAR fileSizeBuf[16];
+	// TODO: get multiple file extentions
+	BOOL found = finder.FindFile(directory + _T("\\") + _T("*.*"));
+	if (!found){ finder.Close(); return _T(""); }
+
+	CString ret_value;
+	CString extensions = _T("mp4,avi,flv,asf");
 	while(found)
 	{
 		found = finder.FindNextFile();

@@ -6,6 +6,7 @@
 #define IDR_MAINFRAME                   128
 #define IDI_ICON1                       130
 #define IDC_SHOCKWAVEFLASH1             1000
+#define IDC_SHOCKWAVEFLASH0             1001
 
 // Next default values for new objects
 // 

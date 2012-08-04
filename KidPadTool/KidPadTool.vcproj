@@ -45,7 +45,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\Include\_NvtFileSystem;..\Include\_UsbDiskDriver"
+				AdditionalIncludeDirectories="..\Include\_NvtFileSystem;..\Include\_UsbDiskDriver;..\Lib"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_DEBUG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -71,6 +71,7 @@
 				Name="VCLinkerTool"
 				AdditionalDependencies="../Lib/NvtFileSystemD.lib ../Lib/UsbDiskDriverD.lib"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\Lib"
 				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -103,7 +104,7 @@
 			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			UseOfMFC="2"
+			UseOfMFC="1"
 			CharacterSet="1"
 			WholeProgramOptimization="1"
 			>
@@ -129,9 +130,10 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="..\Include\_NvtFileSystem;..\Include\_UsbDiskDriver;..\Lib"
 				PreprocessorDefinitions="WIN32;_WINDOWS;NDEBUG"
 				MinimalRebuild="false"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
 				UsePrecompiledHeader="2"
 				WarningLevel="3"
@@ -151,7 +153,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="../Lib/NvtFileSystem.lib ../Lib/UsbDiskDriver.lib"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\Lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"

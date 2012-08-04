@@ -68,6 +68,8 @@ public:
 
 	CString ImportVideos();
 	CString GetLocalPictures(CString directory);
+	CString GetLocalAudios(CString directory);
+	CString GetLocalVideos(CString directory);
 
 protected:
 	CString m_workingFolderName;

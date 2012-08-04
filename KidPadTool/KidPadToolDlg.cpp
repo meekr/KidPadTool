@@ -10,14 +10,51 @@
 #include "tinyxml.h"
 #include "Dbt.h"
 
+#define _NUTIL_LIB_REFERENCE 1
+#include <nutil.h>
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
 
+
 // CKidPadToolDlg 对话框
 
 
+CKidPadToolDlg * app_ptr = 0 ;
+static void __cdecl TestCmdApp(void * p1, void * p2, void * p3)
+{
+	return app_ptr->TestFunction01(p1, p2, p3);
+	
+	//const char * buff = (char*)p1 ;
+	//
+	//if(buff == 0)
+	//{
+	//	::OutputDebugStringA("Completed!\n");
+	//}
+	//else
+	//{
+	//	//::OutputDebugStringA("\r\n");
+	//	::OutputDebugStringA(buff);
+	//}
+	//return ;
+}
+
+void CKidPadToolDlg::TestFunction01(void * p1, void * p2, void * p3)
+{
+	const char * buff = (char*)p1 ;
+	if(buff == 0)
+	{
+		::OutputDebugStringA("Completed!\n");
+	}
+	else
+	{
+		//::OutputDebugStringA("\r\n");
+		::OutputDebugStringA(buff);
+	}
+	return ;
+}
 
 
 CKidPadToolDlg::CKidPadToolDlg(CWnd* pParent /*=NULL*/)
@@ -30,9 +67,12 @@ void CKidPadToolDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_SHOCKWAVEFLASH1, flashUI);
+	//DDX_Control(pDX, IDC_SHOCKWAVEFLASH0, loader);
+	DDX_Control(pDX, IDC_SHOCKWAVEFLASH0, CShockwaveflash0);
 }
 
 BEGIN_MESSAGE_MAP(CKidPadToolDlg, CDialog)
+	ON_WM_CREATE()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_NCHITTEST()
@@ -75,16 +115,19 @@ BOOL CKidPadToolDlg::OnInitDialog()
 	m_workingFolderName = m_workingFolderName.Left(m_workingFolderName.ReverseFind(_T('\\')));
 	
 	this->flashUI.LoadMovie(0, m_workingFolderName + "\\EPadClient.swf");
+	flashUI.MoveWindow(0, 0, 0, 0);
+	this->CShockwaveflash0.LoadMovie(0, m_workingFolderName + "\\Splash.swf");
+	CShockwaveflash0.MoveWindow(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+	
 	CWnd::SetWindowPos(NULL, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SWP_NOZORDER);
-	this->flashUI.MoveWindow(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-
-	/*
-	// Set WS_EX_LAYERED on this window 
-	SetWindowLong(this->GetSafeHwnd(), GWL_EXSTYLE,
-	GetWindowLong(this->GetSafeHwnd(), GWL_EXSTYLE) | WS_EX_LAYERED);
-	// Make this window 70% alpha
-	SetLayeredWindowAttributes( 0, (255 * 70) / 100, LWA_ALPHA);
-	*/
+	
+	app_ptr = this ;
+	CmdAppParam * cap = (CmdAppParam*)malloc(sizeof(CmdAppParam)) ;
+	cap->cmd_str = (TCHAR*)malloc(2048);
+	memset(cap->cmd_str, 0, 2048);
+	_tcscat(cap->cmd_str, _T("\\\\psf\home\Desktop\for Win7\work\KidPadTool\KidPadToolffmpeg -i IMG_0199_1.mp4 -b:v 512k -s 480x272 -y abc.flv"));
+	cap->fn = TestCmdApp ;
+	RunCmdApp(cap);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -151,10 +194,16 @@ void CKidPadToolDlg::FSCommandShockwaveflash1(LPCTSTR command, LPCTSTR args)
 {
 	if (0 == _tcscmp(_T("quit"), command))
 	{
+		CShockwaveflash0.DestroyWindow();
 		CDialog::OnCancel();
 	}
 	else
 	{
+		if (0 == _tcscmp(_T("loaded"), command))
+		{
+			CShockwaveflash0.MoveWindow(0, 0, 0, 0);
+			this->flashUI.MoveWindow(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+		}
 		apiController.DispatchFlashCommand(command, args);
 	}
 }
@@ -196,4 +245,14 @@ BOOL CKidPadToolDlg::PreTranslateMessage(MSG *pmsg)
 	}
 	
 	return CDialog::PreTranslateMessage(pmsg);
+}
+
+afx_msg BOOL CKidPadToolDlg::OnCreate (LPCREATESTRUCT lpc)
+{
+	 if (CDialog::OnCreate(lpc) == -1)
+	return -1;
+
+	SetWindowTransparentForColor(this->GetSafeHwnd(), RGB(0xAB, 0xC1, 0x23));
+	 
+	return 0;
 }
