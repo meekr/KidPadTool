@@ -26,19 +26,6 @@ CKidPadToolDlg * app_ptr = 0 ;
 static void __cdecl TestCmdApp(void * p1, void * p2, void * p3)
 {
 	return app_ptr->TestFunction01(p1, p2, p3);
-	
-	//const char * buff = (char*)p1 ;
-	//
-	//if(buff == 0)
-	//{
-	//	::OutputDebugStringA("Completed!\n");
-	//}
-	//else
-	//{
-	//	//::OutputDebugStringA("\r\n");
-	//	::OutputDebugStringA(buff);
-	//}
-	//return ;
 }
 
 void CKidPadToolDlg::TestFunction01(void * p1, void * p2, void * p3)
@@ -121,13 +108,7 @@ BOOL CKidPadToolDlg::OnInitDialog()
 	
 	CWnd::SetWindowPos(NULL, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SWP_NOZORDER);
 	
-	app_ptr = this ;
-	CmdAppParam * cap = (CmdAppParam*)malloc(sizeof(CmdAppParam)) ;
-	cap->cmd_str = (TCHAR*)malloc(2048);
-	memset(cap->cmd_str, 0, 2048);
-	_tcscat(cap->cmd_str, _T("\\\\psf\home\Desktop\for Win7\work\KidPadTool\KidPadToolffmpeg -i IMG_0199_1.mp4 -b:v 512k -s 480x272 -y abc.flv"));
-	cap->fn = TestCmdApp ;
-	RunCmdApp(cap);
+	
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }

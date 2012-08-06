@@ -51,13 +51,6 @@ public:
 
 protected:
 	CString m_workingFolderName;
-	CString	m_pcLocalHostName;
-	CString m_programUsbDiskName;
-
-	CString m_driveTempName;
-	CString m_driveNANDName;
-	CString m_driveSDName;
-	CString m_deviceDriveName;
 
 	char *m_pu8xmlBuffer;
 

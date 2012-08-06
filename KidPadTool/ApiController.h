@@ -71,18 +71,22 @@ public:
 	CString GetLocalAudios(CString directory);
 	CString GetLocalVideos(CString directory);
 
+	void ConvertVideoCallback(void * information, void * percentage, void * milisecond);
+	void ImportVideo(CString filepath);
+
 protected:
 	CString m_workingFolderName;
 	CString m_programUsbDiskName;
 
 	CString m_downloadDirectory;
+	CString m_mediaDirectory4Video;
+	CString m_mediaDirectory4Audio;
+	CString m_mediaDirectory4Picture;
 	CString m_downloadXml;
 	TiXmlDocument *m_downloadDoc;
 
-	CString m_driveTempName;
 	CString m_driveNANDName;
 	CString m_driveSDName;
-	CString m_deviceDriveName;
 
 	char *m_pu8xmlBuffer;
 	TCHAR m_pszBuffer[MAX_PATH * 2];
