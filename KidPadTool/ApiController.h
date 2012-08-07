@@ -66,13 +66,12 @@ public:
 	void DispatchFlashCall(const char* request, const char* args);
 	void Exit();
 
-	CString ImportVideos();
-	CString GetLocalPictures(CString directory);
-	CString GetLocalAudios(CString directory);
-	CString GetLocalVideos(CString directory);
+	CString GetLocalMedia(CString directory, CString extensions);
+	CString GetDeviceMedia(CString xmlFile, CString directory);
 
 	void ConvertVideoCallback(void * information, void * percentage, void * milisecond);
-	void ImportVideo(CString filepath);
+	void ConvertVideo(CString filepath);
+	void Transfer2Device(CString sourceFile, CString targetDirectory);
 
 protected:
 	CString m_workingFolderName;
