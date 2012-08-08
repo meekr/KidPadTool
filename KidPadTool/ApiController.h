@@ -68,9 +68,12 @@ public:
 
 	CString GetLocalMedia(CString directory, CString extensions);
 	CString GetDeviceMedia(CString xmlFile, CString directory);
+	void DeleteDeviceMedia(CString xmlFile, CString mediaFile);
 
-	void ConvertVideoCallback(void * information, void * percentage, void * milisecond);
+	void ConvertAVCallback(void * information, void * percentage, void * milisecond);
+	void ConvertAudio(CString filepath);
 	void ConvertVideo(CString filepath);
+	CString AppendMediaNodeToXml(CString xmlFile, CString filename, CString mediaType);
 	void Transfer2Device(CString sourceFile, CString targetDirectory);
 
 protected:
