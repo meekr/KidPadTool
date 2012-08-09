@@ -44,12 +44,10 @@ public:
 	void UpdateList();
 	void ScanUsbDisk();
 	CString BrowsePC();
-	CString GetLocalAppNames(CString localDirectoryPath);
 	CString GetLocalIconBase64(CString iconFilePath);
 	CString GetDeviceFileContent(CString filePath);
 	CString GetDeviceIconBase64(CString iconFilePath);
 	BOOL DeleteAppOnDevice(CString appDirectoryPaths);
-	BOOL DeleteAppOnPc(CString appName);
 	BOOL DeleteDirectoryOnDevice(CString directory);
 	BOOL DeleteAppNodeOnDeviceXml(CString appCategoryXml, CString appName);
 	CString InstallNPK(CString npkFile);
@@ -81,7 +79,6 @@ protected:
 	CString m_workingFolderName;
 	CString m_programUsbDiskName;
 
-	CString m_downloadDirectory;
 	CString m_mediaDirectory4Video;
 	CString m_mediaDirectory4Audio;
 	CString m_mediaDirectory4Picture;
