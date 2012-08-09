@@ -73,6 +73,7 @@ public:
 	void ConvertAVCallback(void * information, void * percentage, void * milisecond);
 	void ConvertAudio(CString filepath);
 	void ConvertVideo(CString filepath);
+	void ConvertPicture(CString filepath);
 	CString AppendMediaNodeToXml(CString xmlFile, CString filename, CString mediaType);
 	void Transfer2Device(CString sourceFile, CString targetDirectory);
 
