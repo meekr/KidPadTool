@@ -299,6 +299,10 @@
 				RelativePath=".\targetver.h"
 				>
 			</File>
+			<File
+				RelativePath=".\threadAction.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="资源文件"

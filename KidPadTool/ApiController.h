@@ -33,7 +33,6 @@ typedef struct program_s {
     }
 } program_t;
 
-
 class ApiController
 {
 public:
@@ -64,7 +63,6 @@ public:
 	void DispatchFlashCall(const char* request, const char* args);
 	void Exit();
 
-	CString GetLocalMedia(CString directory, CString extensions);
 	CString GetDeviceMedia(CString xmlFile, CString directory);
 	void DeleteDeviceMedia(CString xmlFile, CString mediaFile);
 
