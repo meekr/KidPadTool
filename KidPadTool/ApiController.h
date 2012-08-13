@@ -43,7 +43,6 @@ public:
 	void UpdateList();
 	void ScanUsbDisk();
 	CString BrowsePC();
-	CString GetLocalIconBase64(CString iconFilePath);
 	CString GetDeviceFileContent(CString filePath);
 	CString GetDeviceIconBase64(CString iconFilePath);
 	BOOL DeleteAppOnDevice(CString appDirectoryPaths);
@@ -67,7 +66,7 @@ public:
 	void DeleteDeviceMedia(CString xmlFile, CString mediaFile);
 
 	void ConvertAVCallback(void * information, void * percentage, void * milisecond);
-	void ConvertAudio(CString filepath);
+	void ConvertMusic(CString filepath);
 	void ConvertVideo(CString filepath);
 	void ConvertPicture(CString filepath);
 	CString AppendMediaNodeToXml(CString xmlFile, CString filename, CString mediaType);
@@ -78,7 +77,7 @@ protected:
 	CString m_programUsbDiskName;
 
 	CString m_mediaDirectory4Video;
-	CString m_mediaDirectory4Audio;
+	CString m_mediaDirectory4Music;
 	CString m_mediaDirectory4Picture;
 	CString m_downloadXml;
 	TiXmlDocument *m_downloadDoc;
