@@ -1,3 +1,8 @@
+ApiController *api_pointer = 0 ;
+CShockwaveflash1 *flash_pointer = 0;
+CString m_downloadDirectory;
+CString m_driveNANDName;
+
 
 typedef struct _tagTRANSFER_PARAMETER_BLOCK
 {
@@ -5,6 +10,13 @@ typedef struct _tagTRANSFER_PARAMETER_BLOCK
 	TCHAR targetFile[1024];
 	CShockwaveflash1 *flash_pointer;
 } TRANSFER_PARAMETER_BLOCK;
+
+typedef struct _tagBIG_UI_DATA_PARAMETER_BLOCK
+{
+    TCHAR method[1024];
+	TCHAR argument[1024];
+	CShockwaveflash1 *flash_pointer;
+} BIG_UI_DATA_PARAMETER_BLOCK;
 
 typedef struct _tagGENERAL_PARAMETER_BLOCK
 {
@@ -74,11 +86,23 @@ void __cdecl threadGetLocalMedia(void * p)
 		ret_value += fileSizeBuf;
 		ret_value += _T(",");
 		ret_value += finder.GetFilePath();
-		TRACE(ret_value);
-		TRACE(_T("\n"));
+		TRACE(ret_value+_T("\n"));
 		flash_pointer->CallFunction(_T("<invoke name='FL_addLocalMedia'><arguments><string>") + ret_value + _T("</string></arguments></invoke>"));
 	}
 	finder.Close();
+
+	free(p);
+	_endthread();
+}
+
+void __cdecl threadSendMessage2Flash(void * p)
+{
+	BIG_UI_DATA_PARAMETER_BLOCK *tpb = (BIG_UI_DATA_PARAMETER_BLOCK *)p;
+	CShockwaveflash1 *flash_pointer = tpb->flash_pointer;
+	CString method = CString(tpb->method);
+	CString argument = CString(tpb->argument);
+
+	flash_pointer->CallFunction(_T("<invoke name='") + method + _T("'><arguments><string>") + argument + _T("</string></arguments></invoke>"));
 
 	free(p);
 	_endthread();
@@ -97,8 +121,11 @@ void __cdecl threadUpdatePercentage(void * p)
 	CFile file;
 	try
 	{
-		if ( !file.Open(CString(tpb->sourceFile), CFile::modeRead ) )
+		CFileException ex;
+		if ( !file.Open(CString(tpb->sourceFile), CFile::modeRead | CFile::shareDenyWrite, &ex) )
 		{
+			TCHAR szError[1024];
+			ex.GetErrorMessage(szError, 1024);
 			return;
 		}
 
@@ -140,6 +167,147 @@ void __cdecl threadUpdatePercentage(void * p)
 
 	TRACE(_T("COMPLETE TRANSFER\n"));
 	flash_pointer->CallFunction(_T("<invoke name='FL_completeTransfer'><arguments><string></string></arguments></invoke>"));
+
+	free(p);
+	_endthread();
+}
+
+BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_pointer)
+{
+	WIN32_FIND_DATA info;
+	HANDLE hwnd;
+
+	CString tempName;
+	CString tempName1;
+	CString srcTempName;
+	CString destTempName;
+	tempName1 = srcName + _T("\\") + _T("*.*");
+
+	int err2;
+	int err = fsMakeDirectory( (CHAR *)(LPCWSTR)destName, NULL );
+	if (err != FS_OK)
+	{
+		if (err != ERR_DIR_BUILD_EXIST)
+		{
+			MessageBox(api_pointer->ownerWindow->m_hWnd, _T("在设备上创建\"") + destName + _T("\"文件夹失败，可能已经存在或设备磁盘空间已满"), _T("错误"), MB_OK|MB_ICONSTOP );
+			return FALSE;
+		}
+	}
+
+	hwnd = FindFirstFile( tempName1, &info );
+	do
+	{
+		if (CString( info.cFileName ) == _T(".") ||  CString( info.cFileName ) == _T(".."))
+			continue;
+		srcTempName = srcName + _T("\\") + info.cFileName;
+		if ( info.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY )
+		{
+			destTempName = destName + _T("\\") + info.cFileName;
+			if ( CopyDirectory( srcTempName, destTempName, flash_pointer ) == FALSE )
+			{
+				FindClose( hwnd );
+				return FALSE;
+			}
+		}
+		else
+		{
+			int tempFileSize = (int)((info.nFileSizeHigh * MAXDWORD) + info.nFileSizeLow);
+			unsigned int blockSize, freeSize, diskSize;
+			err2 = fsDiskFreeSpace( m_driveNANDName.GetAt( 0 ), &blockSize, &freeSize, &diskSize );
+			if ( err2 == FS_OK )
+			{
+				double freeSize2 = freeSize;
+				double tempFileSize2 = tempFileSize / 1024.0;
+				double temptemp = (freeSize2 - tempFileSize2);
+				if ( temptemp < 10240.0 )
+				{
+					FindClose( hwnd );
+					MessageBox(api_pointer->ownerWindow->m_hWnd, _T("磁盘已满"), _T("错误"), MB_OK|MB_ICONSTOP);
+					return FALSE;
+				}
+			}
+
+			tempName = destName + _T("\\") + info.cFileName;
+			CString suFileName = tempName;
+			err = fsOpenFile( (CHAR *)(LPCWSTR)suFileName, NULL, O_CREATE|O_TRUNC );
+			if ( err < 0 )
+			{
+				FindClose( hwnd );
+				MessageBox(api_pointer->ownerWindow->m_hWnd, _T("在设备上创建\"") + suFileName + _T("\"文件失败，可能已经存在或设备磁盘空间已满"), _T("错误"), MB_OK|MB_ICONSTOP);
+				return FALSE;
+			}
+
+			BYTE buffer[4096];
+			CFile file;
+			try
+			{
+				if ( !file.Open( srcTempName, CFile::modeRead ) )
+				{
+					err2 = fsCloseFile( err );
+					FindClose( hwnd );
+					MessageBox(api_pointer->ownerWindow->m_hWnd, srcTempName, _T("打开计算机上文件失败"), MB_OK|MB_ICONSTOP );
+					return FALSE;
+				}
+
+				CString arg = _T("<invoke name='FL_installSetTransferInformation'><arguments><string>");
+				arg += info.cFileName;
+				arg += _T("</string></arguments></invoke>");
+				flash_pointer->CallFunction(arg);
+				DWORD dwBytesRemaining = (DWORD)file.GetLength();
+
+				// may add check device size here
+				INT nWriteCnt;
+				UINT nBytesRead;
+				while ( dwBytesRemaining )
+				{
+					nBytesRead = file.Read( buffer, sizeof(buffer) );
+					err2 = fsWriteFile( err, buffer, nBytesRead, &nWriteCnt );
+					if( err2 != FS_OK )
+					{
+						file.Close();
+						FindClose( hwnd );
+						err2 = fsCloseFile( err );
+						MessageBox(api_pointer->ownerWindow->m_hWnd, _T("在设备上写\"") + suFileName + _T("\"文件失败，可能设备磁盘空间已满"), _T("错误"), MB_OK|MB_ICONSTOP );
+						return FALSE;
+					}
+					dwBytesRemaining -= nBytesRead;
+				}
+				file.Close();
+			}
+			catch ( CFileException* pEx )
+			{
+				err2 = fsCloseFile( err );
+				FindClose( hwnd );
+				MessageBox(api_pointer->ownerWindow->m_hWnd, pEx->m_strFileName, _T("Get length, read, or close PC file failed"), MB_OK|MB_ICONSTOP );
+				pEx->Delete();
+				return FALSE;
+			}
+
+			err2 = fsCloseFile( err );
+			if ( err2 != FS_OK )
+			{
+				FindClose( hwnd );
+				MessageBox(api_pointer->ownerWindow->m_hWnd, _T("Close \"") + suFileName + _T("\" failed, may disk full"), _T("Error"), MB_OK|MB_ICONSTOP );
+				return FALSE;
+			}
+		}
+	}
+	while ( FindNextFile( hwnd, &info ) );
+
+	FindClose( hwnd );
+	return TRUE;
+}
+
+void __cdecl threadCopyPcDirectoryToDevice(void * p)
+{
+	GENERAL_PARAMETER_BLOCK *tpb = (GENERAL_PARAMETER_BLOCK *)p;
+	CShockwaveflash1 *flash_pointer = tpb->flash_pointer;
+	CString srcName(tpb->parameter1);
+	CString destName(tpb->parameter2);
+
+	CopyDirectory(srcName, destName, flash_pointer);
+
+	flash_pointer->CallFunction(_T("<invoke name='FL_installCompleteTransfer'><arguments><string></string></arguments></invoke>"));
 
 	free(p);
 	_endthread();

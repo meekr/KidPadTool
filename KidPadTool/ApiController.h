@@ -45,13 +45,11 @@ public:
 	CString BrowsePC();
 	CString GetDeviceFileContent(CString filePath);
 	CString GetDeviceIconBase64(CString iconFilePath);
-	BOOL DeleteAppOnDevice(CString appDirectoryPaths);
+	void DeleteDeviceApp(CString appName);
 	BOOL DeleteDirectoryOnDevice(CString directory);
 	BOOL DeleteAppNodeOnDeviceXml(CString appCategoryXml, CString appName);
-	CString InstallNPK(CString npkFile);
-	BOOL IsApplicationInstalled(CString appName, CString appCategoryXml);
-	BOOL InsertXMLBufferElement(CString xmlFile, CString appCategoryXml, program_t& program);
-	BOOL CopyDirectory(CString srcName, CString destName);
+	BOOL IsApplicationInstalled(CString appName);
+	BOOL InsertXMLBufferElement(CString xmlFile, CString appListXml, program_t& program);
 	BOOL SaveFileFromBase64(CString base64String, CString filePath);
 	BOOL CancelDownload(CString appPathWithoutExtention);
 	BOOL Import2Library();
@@ -62,9 +60,14 @@ public:
 	void DispatchFlashCall(const char* request, const char* args);
 	void Exit();
 
+	void InstallApp(CString appName);
+	void TransferApp(CString appName);
+	CString InsertAppNode(CString appName);
+	CString GetDeviceApps(CString xmlFile);
 	CString GetDeviceMedia(CString xmlFile, CString directory);
 	void DeleteDeviceMedia(CString xmlFile, CString mediaFile);
 
+	void ExtractZipCallback(void * p1, void * p2, void * p3);
 	void ConvertAVCallback(void * information, void * percentage, void * milisecond);
 	void ConvertMusic(CString filepath);
 	void ConvertVideo(CString filepath);
@@ -82,7 +85,6 @@ protected:
 	CString m_downloadXml;
 	TiXmlDocument *m_downloadDoc;
 
-	CString m_driveNANDName;
 	CString m_driveSDName;
 
 	char *m_pu8xmlBuffer;
