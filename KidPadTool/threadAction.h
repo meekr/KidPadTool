@@ -86,7 +86,6 @@ void __cdecl threadGetLocalMedia(void * p)
 		ret_value += fileSizeBuf;
 		ret_value += _T(",");
 		ret_value += finder.GetFilePath();
-		TRACE(ret_value+_T("\n"));
 		flash_pointer->CallFunction(_T("<invoke name='FL_addLocalMedia'><arguments><string>") + ret_value + _T("</string></arguments></invoke>"));
 	}
 	finder.Close();

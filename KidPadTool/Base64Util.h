@@ -6,7 +6,7 @@
 #define _NABASE_LIB_REFERENCE 1
 #pragma warning(disable:4786 4244 4996)
 #include <tchar.h>
-#include "nbase.h"
+#include <nbase.h>
 /////////////////////////////////////////////////////////////////////////////////////////
 namespace b64
 {
@@ -369,19 +369,17 @@ lb_exit:
 
 		bs::WinTxtFile * wfs = new bs::WinTxtFile();
 		wfs->Init();
-		
-		if(wfs->OpenTextFileForRead(filename) == false)		{ is_try_utf8 = true ; goto lb_exit ; }
-
+		if(wfs->OpenTextFileForRead(filename) == true)
+{
 		void * buff = wfs->ReadAll(sizeof(TCHAR)); 
 		if(buff == 0)	{ goto lb_exit ; }
 		rtv.Append((TCHAR*)buff); 
 		wfs->_free(buff); 
+}
 		
 lb_exit:
 
 		if(wfs !=0)	{ wfs->Release(); delete wfs; wfs = 0 ; } 
-
-		if(is_try_utf8 == true)	{ rtv = __ReadAllFromTextFileUTF8(filename); }
 
 		return rtv ;
 	}
