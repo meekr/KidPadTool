@@ -76,7 +76,7 @@ void __cdecl threadGetLocalMedia(void * p)
 
 		CString filename = finder.GetFileName();
 		CString ext = filename.Right(filename.GetLength() - filename.ReverseFind(_T('.')) - 1);
-		if (extension.Find(ext) == -1)
+		if (extension.Find(ext.MakeLower()) == -1)
 			continue;
 
 		_stprintf_s(fileSizeBuf, sizeof(fileSizeBuf) / sizeof(TCHAR), _T("%d"), finder.GetLength());
