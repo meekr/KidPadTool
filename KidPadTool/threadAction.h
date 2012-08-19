@@ -152,6 +152,10 @@ void __cdecl threadUpdatePercentage(void * p)
 			str.Format(L"%d", completePercentage);
 			
 			flash_pointer->CallFunction(_T("<invoke name='FL_setTransferPercentage'><arguments><string>") + str + _T("</string></arguments></invoke>"));
+			
+			/*CString out;
+			out.Format(L"total=%d, remain=%d, complete=%d%%\n", totalBytes, dwBytesRemaining, completePercentage);
+			::OutputDebugString(out);*/
 		}
 		file.Close();
 	}

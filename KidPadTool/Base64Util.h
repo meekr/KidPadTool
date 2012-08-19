@@ -365,23 +365,22 @@ lb_exit:
 	static CString ReadAllFromTextFile(TCHAR * filename)
 	{
 		bool is_try_utf8 = false ;
-		CString rtv ;
-
+		CString rtv = CString(_T(""));
 		bs::WinTxtFile * wfs = new bs::WinTxtFile();
 		wfs->Init();
 		if(wfs->OpenTextFileForRead(filename) == true)
-{
-		void * buff = wfs->ReadAll(sizeof(TCHAR)); 
-		if(buff == 0)	{ goto lb_exit ; }
-		rtv.Append((TCHAR*)buff); 
-		wfs->_free(buff); 
-}
+		{
+			void * buff = wfs->ReadAll(sizeof(TCHAR)); 
+			if(buff == 0)	{ goto lb_exit ; }
+			rtv.Append((TCHAR*)buff); 
+			wfs->_free(buff); 
+		}
 		
 lb_exit:
 
 		if(wfs !=0)	{ wfs->Release(); delete wfs; wfs = 0 ; } 
 
-		return rtv ;
+		return (rtv) ;
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////
 	static CString ReadAllFromTextFile(CString filename)
