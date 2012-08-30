@@ -5,9 +5,7 @@
 
 /**********************************************************************************************************/
 /**********************************************************************************************************/
-bool SetWindowTransparentForColor(HWND wnd_hwnd, unsigned long color);
-
-const TCHAR * __cdecl SeekFile(const TCHAR * dir_buff, const TCHAR * file_name);
+bool __cdecl SetWindowTransparentForColor(HWND wnd_hwnd, unsigned long color);
 /**********************************************************************************************************/
 typedef  void (__cdecl * CmdAppCallBackFN)(void *, void *, void *) ;
 
@@ -17,8 +15,8 @@ typedef struct _tag_cmd_app_param_node
 	void	* fn ;
 }CmdAppParam;
 
-bool RunCmdApp(CmdAppParam * lp);
-bool RunCmdAppForFFMpeg(CmdAppParam * lp);
+bool __cdecl RunCmdApp(CmdAppParam * lp);
+bool __cdecl RunCmdAppForFFMpeg(CmdAppParam * lp);
 /**********************************************************************************************************/
 
 

@@ -366,19 +366,32 @@ lb_exit:
 	{
 		bool is_try_utf8 = false ;
 		CString rtv = CString(_T(""));
-		bs::WinTxtFile * wfs = new bs::WinTxtFile();
-		wfs->Init();
-		if(wfs->OpenTextFileForRead(filename) == true)
-		{
-			void * buff = wfs->ReadAll(sizeof(TCHAR)); 
-			if(buff == 0)	{ goto lb_exit ; }
-			rtv.Append((TCHAR*)buff); 
-			wfs->_free(buff); 
-		}
+		void * buff = 0 ;
+		HANDLE mhd = (HANDLE)::CreateFile(filename ,
+			GENERIC_READ,	//GENERIC_READ| GENERIC_WRITE,
+			0,		//FILE_SHARE_READ | FILE_SHARE_WRITE ,
+			0,
+			OPEN_EXISTING,
+			FILE_ATTRIBUTE_NORMAL,//|FILE_FLAG_OVERLAPPED,
+			0
+			);
+		if(mhd == INVALID_HANDLE_VALUE) { goto lb_exit; }
+		unsigned long _file_size = ::GetFileSize(mhd , NULL) ;
+		unsigned long _read_size = 0 ;
+		buff = malloc(_file_size + 4);
+		memset(buff, 0, _file_size + 4);
+		::ReadFile(mhd,buff,_file_size,&_read_size,NULL) ;
+	if(_read_size > 2)
+	{
+		rtv.Append(((TCHAR*)buff)+1);
+	}
+		::CloseHandle(mhd);
+
+
 		
 lb_exit:
 
-		if(wfs !=0)	{ wfs->Release(); delete wfs; wfs = 0 ; } 
+		
 
 		return (rtv) ;
 	}

@@ -80,6 +80,7 @@ LRESULT CKidPadToolDlg::OnNcHitTest(CPoint point)
 
 BOOL CKidPadToolDlg::OnInitDialog()
 {
+	SetWindowTransparentForColor(this->GetSafeHwnd(), RGB(0xAB, 0xC1, 0x23));
 	CDialog::OnInitDialog();
 
 	apiController.ownerWindow = this;
@@ -108,8 +109,6 @@ BOOL CKidPadToolDlg::OnInitDialog()
 	
 	CWnd::SetWindowPos(NULL, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SWP_NOZORDER);
 	
-	
-
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -138,6 +137,24 @@ void CKidPadToolDlg::OnPaint()
 	}
 	else
 	{
+
+		/*CRect rect2;
+		CDC *pCDC;
+
+		CBrush RedBrush(RGB(0xAB, 0xC1, 0x23));
+		CBrush BlueBrush(RGB(0xAB, 0xC1, 0x23));
+
+		GetClientRect(&rect2);
+		pCDC = GetDC();
+		pCDC->FillRect(rect2, &RedBrush);
+		ReleaseDC(pCDC);
+
+		GetClientRect(&rect2);
+		pCDC = GetDC();
+		pCDC->FillRect(rect2, &BlueBrush);
+		ReleaseDC(pCDC);*/
+
+
 		CDialog::OnPaint();
 	}
 }
@@ -195,13 +212,17 @@ void CKidPadToolDlg::FlashCallShockwaveflash1(LPCTSTR request)
 	
 	// parse request  
     TiXmlDocument request_xml;
-	request_xml.Parse(CT2CA(sXml));
+	BSTR b = SysAllocString(request);
+	char * p = _com_util::ConvertBSTRToString(b);
+	request_xml.Parse(p);
     const char* request_name = request_xml.RootElement()->Attribute("name");
 
 	TiXmlElement *node = (TiXmlElement *)request_xml.RootElement()->FirstChild()->FirstChild();
 	const char* request_args = node->GetText();
 
 	apiController.DispatchFlashCall(request_name, request_args);
+	if(b !=0 )	{ SysFreeString(b) ;}
+	if(p != 0)	{ delete[] p; }
 }
 
 void CKidPadToolDlg::OnSize(UINT nType, int cx, int cy)
