@@ -64,6 +64,7 @@ BEGIN_MESSAGE_MAP(CKidPadToolDlg, CDialog)
 	ON_WM_QUERYDRAGICON()
 	ON_WM_NCHITTEST()
 	ON_WM_DEVICECHANGE()
+	ON_WM_ERASEBKGND()
 	//}}AFX_MSG_MAP
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
@@ -158,6 +159,7 @@ void CKidPadToolDlg::OnPaint()
 		CDialog::OnPaint();
 	}
 }
+
 
 //当用户拖动最小化窗口时系统调用此函数取得光标
 //显示。
@@ -257,4 +259,10 @@ afx_msg BOOL CKidPadToolDlg::OnCreate (LPCREATESTRUCT lpc)
 	SetWindowTransparentForColor(this->GetSafeHwnd(), RGB(0xAB, 0xC1, 0x23));
 	 
 	return 0;
+}
+afx_msg BOOL CKidPadToolDlg::OnEraseBkgnd(CDC * _cdc)
+{
+	FixBkgndTransparentForColor(this->GetSafeHwnd(), RGB(0xAB, 0xC1, 0x23), _cdc->m_hDC);
+
+	return TRUE ;
 }

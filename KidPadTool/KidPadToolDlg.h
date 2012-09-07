@@ -35,6 +35,7 @@ protected:
 	virtual BOOL OnInitDialog();
 	afx_msg BOOL OnCreate (LPCREATESTRUCT lpc) ;
 	afx_msg void OnPaint();
+	afx_msg BOOL OnEraseBkgnd(CDC * _cdc);
 	afx_msg HCURSOR OnQueryDragIcon();
 	afx_msg BOOL OnDeviceChange (UINT nEventType, DWORD_PTR dwData);
 	afx_msg LRESULT OnNcHitTest(CPoint point);
