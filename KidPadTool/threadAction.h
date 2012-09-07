@@ -308,9 +308,10 @@ void __cdecl threadCopyPcDirectoryToDevice(void * p)
 	CString srcName(tpb->parameter1);
 	CString destName(tpb->parameter2);
 
-	CopyDirectory(srcName, destName, flash_pointer);
-
-	flash_pointer->CallFunction(_T("<invoke name='FL_installCompleteTransfer'><arguments><string></string></arguments></invoke>"));
+	if (CopyDirectory(srcName, destName, flash_pointer))
+	{
+		flash_pointer->CallFunction(_T("<invoke name='FL_installCompleteTransfer'><arguments><string></string></arguments></invoke>"));
+	}
 
 	free(p);
 	_endthread();
