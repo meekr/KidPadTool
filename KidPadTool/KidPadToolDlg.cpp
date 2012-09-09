@@ -65,6 +65,7 @@ BEGIN_MESSAGE_MAP(CKidPadToolDlg, CDialog)
 	ON_WM_NCHITTEST()
 	ON_WM_DEVICECHANGE()
 	ON_WM_ERASEBKGND()
+	ON_WM_ACTIVATEAPP()
 	//}}AFX_MSG_MAP
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
@@ -235,9 +236,32 @@ void CKidPadToolDlg::OnSize(UINT nType, int cx, int cy)
 
 BOOL CKidPadToolDlg::PreTranslateMessage(MSG *pmsg)
 {
-	if(pmsg->message == WM_KEYDOWN || pmsg->message == WM_CHAR)
+	/*if(pmsg->message == WM_KEYDOWN || pmsg->message == WM_CHAR)
 	{
 		SendMessage(pmsg->message,pmsg->wParam,pmsg->lParam);
+	}*/
+	if((pmsg->message == WM_KEYDOWN) || ((pmsg->message == WM_KEYUP) ) )
+	{
+		if( (pmsg->wParam == VK_TAB) 
+			|| (pmsg->wParam == VK_LEFT) 
+			|| (pmsg->wParam == VK_RIGHT) 
+			|| (pmsg->wParam == VK_UP) 
+			|| (pmsg->wParam == VK_DOWN) 
+			|| (pmsg->wParam == VK_RETURN) 
+			|| (pmsg->wParam == 0xA) 
+		)
+		{
+			if(pmsg->message == WM_KEYDOWN)
+			{
+				::TranslateMessage(pmsg);
+				SendMessage(pmsg->message,pmsg->wParam,pmsg->lParam);
+			}
+			return TRUE ;
+		}
+	}
+	else if((pmsg->message == WM_CHAR)|| (pmsg->message == WM_SYSCHAR) )
+	{
+                 SendMessage(pmsg->message,pmsg->wParam,pmsg->lParam);
 	}
 	else if((WM_RBUTTONDOWN == pmsg->message) || (WM_RBUTTONDBLCLK == pmsg->message))
 	{
@@ -265,4 +289,12 @@ afx_msg BOOL CKidPadToolDlg::OnEraseBkgnd(CDC * _cdc)
 	FixBkgndTransparentForColor(this->GetSafeHwnd(), RGB(0xAB, 0xC1, 0x23), _cdc->m_hDC);
 
 	return TRUE ;
+}
+afx_msg void CKidPadToolDlg::OnActivateApp(BOOL v1, DWORD v2)
+{
+	RECT rc = {0} ;
+	this->GetClientRect(&rc);
+	this->flashUI.MoveWindow(0, 0, rc.right-rc.left, rc.bottom-rc.top, FALSE);
+	this->RedrawWindow(0,0, RDW_UPDATENOW|RDW_ALLCHILDREN);
+	return  ;
 }
