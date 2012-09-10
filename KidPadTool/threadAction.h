@@ -175,7 +175,7 @@ void __cdecl threadUpdatePercentage(void * p)
 	_endthread();
 }
 
-BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_pointer)
+BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_pointer, CString command)
 {
 	WIN32_FIND_DATA info;
 	HANDLE hwnd;
@@ -206,7 +206,7 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 		if ( info.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY )
 		{
 			destTempName = destName + _T("\\") + info.cFileName;
-			if ( CopyDirectory( srcTempName, destTempName, flash_pointer ) == FALSE )
+			if (CopyDirectory(srcTempName, destTempName, flash_pointer, command) == FALSE)
 			{
 				FindClose( hwnd );
 				return FALSE;
@@ -252,7 +252,7 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 					return FALSE;
 				}
 
-				CString arg = _T("<invoke name='FL_installSetTransferInformation'><arguments><string>");
+				CString arg = _T("<invoke name='") + command + _T("'><arguments><string>");
 				arg += info.cFileName;
 				arg += _T("</string></arguments></invoke>");
 				flash_pointer->CallFunction(arg);
@@ -308,9 +308,35 @@ void __cdecl threadCopyPcDirectoryToDevice(void * p)
 	CString srcName(tpb->parameter1);
 	CString destName(tpb->parameter2);
 
-	if (CopyDirectory(srcName, destName, flash_pointer))
+	if (CopyDirectory(srcName, destName, flash_pointer, _T("FL_installSetTransferInformation")))
 	{
 		flash_pointer->CallFunction(_T("<invoke name='FL_installCompleteTransfer'><arguments><string></string></arguments></invoke>"));
+	}
+
+	free(p);
+	_endthread();
+}
+
+void __cdecl threadInstallBuiltIn(void * p)
+{
+	GENERAL_PARAMETER_BLOCK *tpb = (GENERAL_PARAMETER_BLOCK *)p;
+	CShockwaveflash1 *flash_pointer = tpb->flash_pointer;
+	CString srcName(tpb->parameter1);
+	CString destName(tpb->parameter2);
+	CString builtIn = destName.Left(destName.GetLength()-1);
+
+	if (CopyDirectory(srcName, destName, flash_pointer, _T("FL_updateSetTransferInformation")))
+	{
+		api_pointer->DeletePcDirectory(srcName);
+		::RemoveDirectory(srcName);
+		
+		// delete obsolete builtIn on device
+		api_pointer->DeleteDirectoryOnDevice(builtIn);
+
+		// rename builtIn2 to builtIn
+		flash_pointer->CallFunction(_T("<invoke name='FL_applyUpdate'><arguments><string></string></arguments></invoke>"));
+		if (fsRenameFile((CHAR *)(LPCWSTR)destName, NULL, (CHAR *)(LPCWSTR)builtIn, NULL, TRUE) == FS_OK)
+			flash_pointer->CallFunction(_T("<invoke name='FL_updateCompleteTransfer'><arguments><string></string></arguments></invoke>"));
 	}
 
 	free(p);

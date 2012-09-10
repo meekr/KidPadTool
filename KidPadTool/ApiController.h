@@ -74,6 +74,7 @@ public:
 	void ConvertPicture(CString filepath);
 	CString AppendMediaNodeToXml(CString xmlFile, CString filename, CString mediaType);
 	void Transfer2Device(CString sourceFile, CString targetDirectory);
+	BOOL CopyDeviceFile2PC(CString deviceFile, CString pcFile);
 
 protected:
 	CString m_workingFolderName;
