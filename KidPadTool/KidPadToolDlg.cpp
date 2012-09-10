@@ -73,7 +73,7 @@ END_MESSAGE_MAP()
 LRESULT CKidPadToolDlg::OnNcHitTest(CPoint point)
 {
 	ScreenToClient(&point);
-	if (point.x > 0 && point.x < 950 && point.y > 0 && point.y < 27)
+	if (point.x > 0 && point.x < 918 && point.y > 0 && point.y < 27)
 		return HTCAPTION;
 	return CWnd::OnNcHitTest(point);
 }
@@ -198,6 +198,14 @@ void CKidPadToolDlg::FSCommandShockwaveflash1(LPCTSTR command, LPCTSTR args)
 		CShockwaveflash0.DestroyWindow();
 		CDialog::OnCancel();
 	}
+	else if (0 == _tcscmp(_T("minimize"), command))
+	{
+		SendMessage(WM_SYSCOMMAND, SC_MINIMIZE, 0);
+	}
+	else if (0 == _tcscmp(_T("maximize"), command))
+	{
+		SendMessage(WM_SYSCOMMAND, SC_MAXIMIZE, 0);
+	}
 	else
 	{
 		if (0 == _tcscmp(_T("loaded"), command))
@@ -260,8 +268,9 @@ BOOL CKidPadToolDlg::PreTranslateMessage(MSG *pmsg)
 		}
 	}
 	else if((pmsg->message == WM_CHAR)|| (pmsg->message == WM_SYSCHAR) )
+	//else if((pmsg->message == WM_CHAR))
 	{
-                 SendMessage(pmsg->message,pmsg->wParam,pmsg->lParam);
+        SendMessage(pmsg->message,pmsg->wParam,pmsg->lParam);
 	}
 	else if((WM_RBUTTONDOWN == pmsg->message) || (WM_RBUTTONDBLCLK == pmsg->message))
 	{
@@ -292,9 +301,9 @@ afx_msg BOOL CKidPadToolDlg::OnEraseBkgnd(CDC * _cdc)
 }
 afx_msg void CKidPadToolDlg::OnActivateApp(BOOL v1, DWORD v2)
 {
-	RECT rc = {0} ;
+	/*RECT rc = {0} ;
 	this->GetClientRect(&rc);
 	this->flashUI.MoveWindow(0, 0, rc.right-rc.left, rc.bottom-rc.top, FALSE);
 	this->RedrawWindow(0,0, RDW_UPDATENOW|RDW_ALLCHILDREN);
-	return  ;
+	return  ;*/
 }
