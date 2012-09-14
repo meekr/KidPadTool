@@ -47,6 +47,7 @@ public:
 	void FSCommandShockwaveflash1(LPCTSTR command, LPCTSTR args);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	BOOL CKidPadToolDlg::PreTranslateMessage(MSG *pMsg);
+	BOOL uiLoaded;
 
 public:
 	TCHAR m_pszBuffer[MAX_PATH * 2];

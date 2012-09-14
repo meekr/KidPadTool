@@ -7,6 +7,7 @@
 /**********************************************************************************************************/
 bool __cdecl SetWindowTransparentForColor(HWND wnd_hwnd, unsigned long color);
 bool __cdecl FixBkgndTransparentForColor(HWND _hwnd, unsigned long color, HDC _hdc);
+bool __cdecl FixBkgndTransparentForColor2(HWND _hwnd, unsigned long color, HDC _hdc);
 /**********************************************************************************************************/
 typedef  void (__cdecl * CmdAppCallBackFN)(void *, void *, void *) ;
 

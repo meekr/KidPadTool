@@ -56,6 +56,20 @@ void CKidPadToolDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SHOCKWAVEFLASH1, flashUI);
 	//DDX_Control(pDX, IDC_SHOCKWAVEFLASH0, loader);
 	DDX_Control(pDX, IDC_SHOCKWAVEFLASH0, CShockwaveflash0);
+
+	OSVERSIONINFO   OsVersionInfo = {0}; 
+	OsVersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	GetVersionEx(&OsVersionInfo); 
+	if( (OsVersionInfo.dwMajorVersion == 5) && (OsVersionInfo.dwMinorVersion == 1))
+	{
+		//xp
+		this->flashUI.put_WMode(_T("Transparent"));
+	}
+	else
+	{
+		//2003, vista, win7, 2008
+		this->flashUI.put_WMode(_T("Opaque"));
+	}
 }
 
 BEGIN_MESSAGE_MAP(CKidPadToolDlg, CDialog)
@@ -82,6 +96,8 @@ LRESULT CKidPadToolDlg::OnNcHitTest(CPoint point)
 
 BOOL CKidPadToolDlg::OnInitDialog()
 {
+	uiLoaded = FALSE;
+
 	SetWindowTransparentForColor(this->GetSafeHwnd(), RGB(0xAB, 0xC1, 0x23));
 	CDialog::OnInitDialog();
 
@@ -176,9 +192,11 @@ afx_msg BOOL CKidPadToolDlg::OnDeviceChange(UINT nEventType, DWORD_PTR dwData)
 	{
 		case DBT_DEVICEREMOVECOMPLETE:
 			((CKidPadToolApp *)AfxGetApp ())->ExitUsb();
-	flashUI.CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>0</string></arguments></invoke>"));
+			TRACE("USB disconnected\n");
+			flashUI.CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>0</string></arguments></invoke>"));
 			break;
 		case DBT_DEVICEARRIVAL:
+			TRACE("USB connected\n");
 			fsInitFileSystem();
 			apiController.ScanUsbDisk();
 			break;
@@ -212,6 +230,7 @@ void CKidPadToolDlg::FSCommandShockwaveflash1(LPCTSTR command, LPCTSTR args)
 		{
 			CShockwaveflash0.MoveWindow(0, 0, 0, 0);
 			this->flashUI.MoveWindow(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+			uiLoaded = TRUE;
 		}
 		apiController.DispatchFlashCommand(command, args);
 	}
@@ -295,9 +314,22 @@ afx_msg BOOL CKidPadToolDlg::OnCreate (LPCREATESTRUCT lpc)
 }
 afx_msg BOOL CKidPadToolDlg::OnEraseBkgnd(CDC * _cdc)
 {
-	FixBkgndTransparentForColor(this->GetSafeHwnd(), RGB(0xAB, 0xC1, 0x23), _cdc->m_hDC);
-
-	return TRUE ;
+	OSVERSIONINFO   OsVersionInfo = {0}; 
+	OsVersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+	GetVersionEx(&OsVersionInfo); 
+	if( ((OsVersionInfo.dwMajorVersion == 5) && (OsVersionInfo.dwMinorVersion == 1))
+		|| !uiLoaded )
+	{
+		//xp
+		FixBkgndTransparentForColor2(this->GetSafeHwnd(), RGB(0xAB, 0xC1, 0x23), _cdc->m_hDC);
+		return TRUE;
+	}
+	else
+	{
+		//2003, vista, win7, 2008
+		
+		return FALSE;
+	}
 }
 afx_msg void CKidPadToolDlg::OnActivateApp(BOOL v1, DWORD v2)
 {
