@@ -11,6 +11,38 @@
 #endif
 
 
+bool __cdecl IsFlashEnvOK()
+{
+	bool rtv = false ;
+	CLSID clsid;
+	int ret = 0 ;
+	HRESULT hr = 0 ;
+	IUnknown * p = 0 ;
+	CLSID   CLSID_FLASH = {   0xd27cdb6e,   0xae6d,   0x11cf,   {   0x96,   0xb8,   0x44,   0x45,   0x53,   0x54,   0x0,   0x0   }   }; 
+
+	CoInitialize(0);
+	if ( CLSIDFromProgID(L"ShockwaveFlash.ShockwaveFlash", &clsid ) == S_FALSE)
+	{
+		//没有安装flash
+		goto lb_exit; 
+	}
+	
+	hr = CoCreateInstance(CLSID_FLASH, NULL, CLSCTX_INPROC_SERVER,  IID_IUnknown, (void**)&p) ;
+	if(hr == S_OK)
+	{
+		rtv = true ;
+	}
+	else
+	{
+		//flash已经安装， 可是版本太低， 不能用于activex方式加载
+		goto lb_exit;  
+	}
+
+lb_exit:
+	if(p != 0)	{ p->Release(); }
+	return rtv ;
+}
+
 // CKidPadToolApp
 
 BEGIN_MESSAGE_MAP(CKidPadToolApp, CWinAppEx)
@@ -58,6 +90,11 @@ BOOL CKidPadToolApp::InitInstance()
 	// TODO: 应适当修改该字符串，
 	// 例如修改为公司或组织名
 	SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
+
+	if (!IsFlashEnvOK()) {
+		MessageBox(NULL, _T("您机器上没有安装Flash Player，或者以安装版本太低。请您先安装Flash Player然后运行本程序！"), _T("ERROR"), MB_OK|MB_ICONSTOP);
+		return FALSE;
+	}
 
 	// Nuvoton CCLi8 (2010.08.12)
 	if (fsInitFileSystem()) {
