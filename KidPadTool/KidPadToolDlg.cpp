@@ -197,7 +197,7 @@ afx_msg BOOL CKidPadToolDlg::OnDeviceChange(UINT nEventType, DWORD_PTR dwData)
 			break;
 		case DBT_DEVICEARRIVAL:
 			TRACE("USB connected\n");
-			fsInitFileSystem();
+			//int ret = fsInitFileSystem();
 			apiController.ScanUsbDisk();
 			break;
 	}

@@ -18,6 +18,7 @@ bool __cdecl IsFlashEnvOK()
 	int ret = 0 ;
 	HRESULT hr = 0 ;
 	IUnknown * p = 0 ;
+	long flashver = 0 ;
 	CLSID   CLSID_FLASH = {   0xd27cdb6e,   0xae6d,   0x11cf,   {   0x96,   0xb8,   0x44,   0x45,   0x53,   0x54,   0x0,   0x0   }   }; 
 
 	CoInitialize(0);
@@ -30,7 +31,24 @@ bool __cdecl IsFlashEnvOK()
 	hr = CoCreateInstance(CLSID_FLASH, NULL, CLSCTX_INPROC_SERVER,  IID_IUnknown, (void**)&p) ;
 	if(hr == S_OK)
 	{
-		rtv = true ;
+		DISPID dispid = 0 ;
+		BSTR _b = ::SysAllocString(L"FlashVersion");
+		DISPPARAMS disp_params = {0};
+		VARIANT v = {0}, v2 = {0} ;
+		EXCEPINFO excepInfo = {0};
+		UINT nArgErr = (UINT)-1;
+
+
+		hr = ((IDispatch*)p)->GetIDsOfNames(IID_NULL, &_b, 1,LOCALE_SYSTEM_DEFAULT, &dispid);
+
+		hr = ((IDispatch*)p)->Invoke(dispid, IID_NULL, LOCALE_USER_DEFAULT, DISPATCH_METHOD, &disp_params, &v, &excepInfo, &nArgErr);
+		if(hr == S_OK)
+		{
+			flashver = v.lVal >> 16;
+		}
+		::SysFreeString(_b);
+		if(flashver >= 11)	{ rtv = true ; }
+		
 	}
 	else
 	{
@@ -92,12 +110,13 @@ BOOL CKidPadToolApp::InitInstance()
 	SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
 
 	if (!IsFlashEnvOK()) {
-		MessageBox(NULL, _T("您机器上没有安装Flash Player，或者以安装版本太低。请您先安装Flash Player然后运行本程序！"), _T("ERROR"), MB_OK|MB_ICONSTOP);
+		MessageBox(NULL, _T("您机器上没有安装Flash Player，或者以安装版本太低。请您先安装Flash Player 11或以上版本然后运行本程序！"), _T("ERROR"), MB_OK|MB_ICONSTOP);
 		return FALSE;
 	}
 
 	// Nuvoton CCLi8 (2010.08.12)
-	if (fsInitFileSystem()) {
+	int ret = fsInitFileSystem();
+	if (ret) {
 		// Error here.
 		return FALSE;
 	}
