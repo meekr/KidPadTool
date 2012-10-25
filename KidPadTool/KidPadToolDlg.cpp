@@ -1,4 +1,3 @@
-
 // KidPadToolDlg.cpp : 实现文件
 //
 
@@ -7,6 +6,7 @@
 #include "KidPadToolDlg.h"
 #include "base64.h"
 #include <iostream>
+#include <time.h>
 #include "tinyxml.h"
 #include "Dbt.h"
 
@@ -19,8 +19,9 @@
 
 
 
+clock_t volatile time_flag = 0 ;
 // CKidPadToolDlg 对话框
-
+//int volatile usb_disk_status = 0;
 
 CKidPadToolDlg * app_ptr = 0 ;
 static void __cdecl TestCmdApp(void * p1, void * p2, void * p3)
@@ -127,6 +128,7 @@ BOOL CKidPadToolDlg::OnInitDialog()
 	
 	CWnd::SetWindowPos(NULL, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SWP_NOZORDER);
 	
+	apiController.IsConnected(true);
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -187,21 +189,74 @@ HCURSOR CKidPadToolDlg::OnQueryDragIcon()
 
 afx_msg BOOL CKidPadToolDlg::OnDeviceChange(UINT nEventType, DWORD_PTR dwData)
 {
-	DEV_BROADCAST_DEVICEINTERFACE * dbd = (DEV_BROADCAST_DEVICEINTERFACE*) dwData;
+	
+	/*DEV_BROADCAST_HDR *dbh = (DEV_BROADCAST_HDR *) dwData;
+	
+	if( (dbh == NULL) || (dbh->dbch_devicetype != DBT_DEVTYP_VOLUME) )
+	{
+		return FALSE ;
+	}
+	DEV_BROADCAST_DEVICEINTERFACE * dbd = (DEV_BROADCAST_DEVICEINTERFACE*) dwData;*/
 	switch(nEventType)
 	{
 		case DBT_DEVICEREMOVECOMPLETE:
-			((CKidPadToolApp *)AfxGetApp ())->ExitUsb();
-			TRACE("USB disconnected\n");
-			flashUI.CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>0</string></arguments></invoke>"));
+		{
+			::OutputDebugString(_T("DBT_DEVICEREMOVECOMPLETE\r\n"));
+			if(apiController.IsConnected(false) == true)
+			{
+				((CKidPadToolApp *)AfxGetApp ())->ExitUsb();
+				
+				TRACE("USB disconnected\n");
+				//设备物理断开完成
+				flashUI.CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>3</string></arguments></invoke>"));
+				time_flag = ::clock();
+				apiController.SetConnStatus(false);
+				//设备完全断开， 可以进行新的连接
+				flashUI.CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>0</string></arguments></invoke>"));
+				return TRUE;
+			}
+
 			break;
+		}
 		case DBT_DEVICEARRIVAL:
-			TRACE("USB connected\n");
-			//int ret = fsInitFileSystem();
-			apiController.ScanUsbDisk();
+		{
+			::OutputDebugString(_T("DBT_DEVICEARRIVAL\r\n"));
+			if(time_flag != 0)
+			{
+				clock_t duration;
+				clock_t tv = ::clock();
+				duration = tv - time_flag;
+				time_flag = 0 ;
+				if(duration < 3000)
+				{
+					::OutputDebugStringA("设备插拔时间间隔不能小于3秒！\r\n");
+					return TRUE;
+				}
+			}
+
+			if(apiController.IsConnected(false) == false)
+			{
+				//设备物理插入完成
+				flashUI.CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>2</string></arguments></invoke>"));
+				//延时5秒让os完成它需要的处理
+				Sleep(5000);
+				//进行扫描， 判断是否可用的设备
+				apiController.ScanUsbDisk();
+				return TRUE;
+			}
+			if(apiController.IsConnected(false) == true)
+			{
+				flashUI.CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>1</string></arguments></invoke>"));
+				TRACE("USB connected\n");
+			}
+			else
+			{
+				flashUI.CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>-1</string></arguments></invoke>"));
+			}
 			break;
+		}
 	}
-	return true;
+	return FALSE;
 }
 
 BEGIN_EVENTSINK_MAP(CKidPadToolDlg, CDialog)

@@ -1,4 +1,10 @@
 // Nuvoton CCLi8 (2010.08.12)
+#pragma once
+
+#ifndef _API_USBDISK_CONTROLLER_
+#define _API_USBDISK_CONTROLLER_
+
+
 #include <string>
 #include <map>
 #include "shockwaveflash1.h"
@@ -9,7 +15,7 @@
 
 typedef struct program_s {
 	char name[ NAME_LENGTH ];
-    char icon[ NAME_LENGTH ];
+	char icon[ NAME_LENGTH ];
 	char type[7];
 	char deployType[8];
 	char entry[ NAME_LENGTH ];
@@ -18,9 +24,9 @@ typedef struct program_s {
 	char securityPassword[ NAME_LENGTH ];
 	char bgColor[ NAME_LENGTH ];
 	char asMain[ NAME_LENGTH ];
-    
-    program_s() {  
-        name[0] = 0;
+
+	program_s() {  
+		name[0] = 0;
 		icon[0] = 0;
 		type[0] = 0;
 		deployType[0] = 0;
@@ -30,18 +36,24 @@ typedef struct program_s {
 		securityPassword[0] = 0;
 		bgColor[0] = 0;
 		asMain[0] = 0;
-    }
+	}
 } program_t;
 
 class ApiController
 {
 public:
+	ApiController();
+
 	CWnd *ownerWindow;
 	CShockwaveflash1 *flashUI;
-
 	void Initialize();
 	void UpdateList();
+	void UpdateList2(void * pdisk);
 	void ScanUsbDisk();
+	
+	bool IsConnected(bool scan_flag);
+	void SetConnStatus(bool v);
+
 	CString BrowsePC();
 	CString GetDeviceFileContent(CString filePath);
 	CString GetDeviceIconBase64(CString iconFilePath);
@@ -78,6 +90,8 @@ public:
 	CString GetCategoryStats();
 	CString GetAppStats();
 
+
+
 protected:
 	CString m_workingFolderName;
 	CString m_programUsbDiskName;
@@ -93,3 +107,5 @@ protected:
 	char *m_pu8xmlBuffer;
 	TCHAR m_pszBuffer[MAX_PATH * 2];
 };
+
+#endif

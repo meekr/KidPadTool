@@ -1,3 +1,4 @@
+//extern  int volatile usb_disk_status ; 
 
 // KidPadTool.cpp : 定义应用程序的类行为。
 //
@@ -143,15 +144,20 @@ BOOL CKidPadToolApp::InitInstance()
 BOOL CKidPadToolApp::ExitUsb()
 {
 	// TODO: Add your specialized code here and/or call the base class
+	//if(usb_disk_status == 0)	{ return TRUE ; }
 	// Nuvoton CCLi8 (2010.08.12)
 	std::map <std::basic_string<TCHAR>, PDISK_T *>::iterator it;
 	for (it = m_usbDisks.begin (); it != m_usbDisks.end (); it ++) {
 		PDISK_T *usbDisk = it->second;
 		UsbDiskDriver *usbDiskDriver = static_cast<UsbDiskDriver *> (usbDisk->ptDriver);
-		fsUnmountPhysicalDisk (usbDisk);
-		usbDiskDriver->onDriveDetach ();
+		//fsUnmountPhysicalDisk (usbDisk);
+		//usbDiskDriver->onDriveDetach ();
 //		m_usbDisks.erase (it->first);
-		delete usbDisk;
+		//delete usbDisk;
+		//delete usbDiskDriver;
+		//fsPhysicalDiskDisconnected(usbDisk);
+		//delete usbDisk;
+		usbDiskDriver->onDriveDetach ();
 		delete usbDiskDriver;
 	}
 	m_usbDisks.clear();

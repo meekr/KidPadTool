@@ -136,6 +136,7 @@ void __cdecl threadUpdatePercentage(void * p)
 		UINT nBytesRead;
 		while ( dwBytesRemaining )
 		{
+			memset(buffer, 0, 1024*8);
 			nBytesRead = file.Read( buffer, sizeof(buffer) );
 			err2 = fsWriteFile( err, buffer, nBytesRead, &nWriteCnt );
 			if( err2 != FS_OK )
