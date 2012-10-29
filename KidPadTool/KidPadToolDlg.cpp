@@ -128,7 +128,7 @@ BOOL CKidPadToolDlg::OnInitDialog()
 	
 	CWnd::SetWindowPos(NULL, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SWP_NOZORDER);
 	
-	apiController.IsConnected(true);
+	
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -283,6 +283,7 @@ void CKidPadToolDlg::FSCommandShockwaveflash1(LPCTSTR command, LPCTSTR args)
 	{
 		if (0 == _tcscmp(_T("loaded"), command))
 		{
+			apiController.IsConnected(true);
 			CShockwaveflash0.MoveWindow(0, 0, 0, 0);
 			this->flashUI.MoveWindow(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 			uiLoaded = TRUE;
@@ -294,13 +295,13 @@ void CKidPadToolDlg::FSCommandShockwaveflash1(LPCTSTR command, LPCTSTR args)
 void CKidPadToolDlg::FlashCallShockwaveflash1(LPCTSTR request)
 {
 	CString sXml = CString(request);
-	
+
 	// parse request  
-    TiXmlDocument request_xml;
+	TiXmlDocument request_xml;
 	BSTR b = SysAllocString(request);
 	char * p = _com_util::ConvertBSTRToString(b);
 	request_xml.Parse(p);
-    const char* request_name = request_xml.RootElement()->Attribute("name");
+	const char* request_name = request_xml.RootElement()->Attribute("name");
 
 	TiXmlElement *node = (TiXmlElement *)request_xml.RootElement()->FirstChild()->FirstChild();
 	const char* request_args = node->GetText();

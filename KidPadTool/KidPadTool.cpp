@@ -6,12 +6,16 @@
 #include "stdafx.h"
 #include "KidPadTool.h"
 #include "KidPadToolDlg.h"
+#define _NUTIL_LIB_REFERENCE 1
+#include <nutil.h>
+
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool __cdecl IsFlashEnvOK()
 {
 	bool rtv = false ;
@@ -58,10 +62,84 @@ bool __cdecl IsFlashEnvOK()
 	}
 
 lb_exit:
+
 	if(p != 0)	{ p->Release(); }
+
 	return rtv ;
 }
+bool __cdecl IsFlashInstallCabValid()
+{
+	bool rtv = false ;
+	TCHAR buff[2048] = {0}, * p = 0 ;
+	size_t l = 0 ;
+	HANDLE mhd = 0 ;
+	
+	::GetModuleFileName(NULL, buff, 2048 / sizeof(TCHAR));
+	l = ::_tcslen(buff);
 
+	p = buff + l - 1 ;
+	while(1)
+	{
+		if( (p[0] == 0x5C) || (p[0] == 0x2F) )
+		{
+			p[1] = 0 ;
+			break ;
+		}
+		p --;
+		if(p < buff)	{ break ; }
+	}
+
+	_tcscat(buff, _T("FlashPlayerInstall.exe"));
+
+	mhd = ::CreateFile(buff
+			, GENERIC_READ
+			,0		//FILE_SHARE_READ | FILE_SHARE_WRITE ,
+			,0
+			,OPEN_EXISTING
+			,FILE_ATTRIBUTE_NORMAL//|FILE_FLAG_OVERLAPPED,
+			,0
+			);
+	if(mhd != INVALID_HANDLE_VALUE)
+	{
+		rtv = true ;
+		::CloseHandle(mhd);
+	}
+
+	return rtv ; 
+}
+bool __cdecl InstalFlashPlayer()
+{
+	size_t l = 0 ;
+	TCHAR * p = 0 ;
+	CmdAppParam * cap = (CmdAppParam*)malloc(sizeof(CmdAppParam));
+	memset(cap, 0, sizeof(CmdAppParam));
+	cap->cmd_str = (TCHAR*)malloc(2048);
+	memset(cap->cmd_str, 0, 2048);
+	::GetModuleFileName(NULL, cap->cmd_str, 2048 / sizeof(TCHAR));
+	l = ::_tcslen(cap->cmd_str);
+
+	p = cap->cmd_str + l - 1 ;
+	while(1)
+	{
+		if( (p[0] == 0x5C) || (p[0] == 0x2F) )
+		{
+			p[1] = 0 ;
+			break ;
+		}
+		p --;
+		if(p < cap->cmd_str)	{ break ; }
+	}
+
+	_tcscat(cap->cmd_str, _T("FlashPlayerInstall.exe"));
+
+	
+
+	::RunWinAppAsync(cap);
+
+	return false;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // CKidPadToolApp
 
 BEGIN_MESSAGE_MAP(CKidPadToolApp, CWinAppEx)
@@ -101,6 +179,10 @@ BOOL CKidPadToolApp::InitInstance()
 
 	AfxEnableControlContainer();
 
+	//For testing
+	
+	//End Testing
+
 	// 标准初始化
 	// 如果未使用这些功能并希望减小
 	// 最终可执行文件的大小，则应移除下列
@@ -110,10 +192,29 @@ BOOL CKidPadToolApp::InitInstance()
 	// 例如修改为公司或组织名
 	SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
 
-	if (!IsFlashEnvOK()) {
-		MessageBox(NULL, _T("您机器上没有安装Flash Player，或者以安装版本太低。请您先安装Flash Player 11或以上版本然后运行本程序！"), _T("ERROR"), MB_OK|MB_ICONSTOP);
-		return FALSE;
+	//检测及安装adobe flash player
+	if (IsFlashEnvOK() == false)
+	{
+		if(IsFlashInstallCabValid() == true)
+		{
+			int ret = MessageBox(NULL, _T("程序功能需要Adobe Flash Player 11及以上版本,\r\n点击【是】现在安装Adobe Flash Player 11.4, \r\n点击【否】手工安装其他版本。"),_T("安装Flash Player"), MB_YESNO );
+			if(ret == IDYES)
+			{
+				InstalFlashPlayer();
+				if (IsFlashEnvOK() == false)
+				{
+					MessageBox(NULL, _T("您机器上没有安装Flash Player，或者以安装版本太低。请您先安装Flash Player 11或以上版本然后运行本程序！"), _T("ERROR"), MB_OK|MB_ICONSTOP);
+					return FALSE;
+				}
+			}
+		}
+		else
+		{
+			MessageBox(NULL, _T("您机器上没有安装Flash Player，或者以安装版本太低。请您先安装Flash Player 11或以上版本然后运行本程序！"), _T("ERROR"), MB_OK|MB_ICONSTOP);
+			return FALSE;
+		}
 	}
+	//结束检测
 
 	// Nuvoton CCLi8 (2010.08.12)
 	int ret = fsInitFileSystem();

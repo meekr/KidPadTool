@@ -53,6 +53,8 @@ public:
 	
 	bool IsConnected(bool scan_flag);
 	void SetConnStatus(bool v);
+	bool IsDeviceFileExist(CString full_file_name);
+	INT64 WriteStream2DeviceFile(CString target_file_name, void * stream_buff, INT64 buff_len, bool is_use_temp_flag);
 
 	CString BrowsePC();
 	CString GetDeviceFileContent(CString filePath);
@@ -90,7 +92,8 @@ public:
 	CString GetCategoryStats();
 	CString GetAppStats();
 
-
+	//unsigned char file_buff[4096];
+	const static unsigned int file_buff_size = 4096 ;
 
 protected:
 	CString m_workingFolderName;
@@ -106,6 +109,7 @@ protected:
 
 	char *m_pu8xmlBuffer;
 	TCHAR m_pszBuffer[MAX_PATH * 2];
+	
 };
 
 #endif

@@ -19,6 +19,7 @@ typedef struct _tag_cmd_app_param_node
 
 bool __cdecl RunCmdApp(CmdAppParam * lp);
 bool __cdecl RunCmdAppForFFMpeg(CmdAppParam * lp);
+bool __cdecl RunWinAppAsync(CmdAppParam * lp);
 /**********************************************************************************************************/
 
 
