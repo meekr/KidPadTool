@@ -197,6 +197,7 @@ void __cdecl threadUpdatePercentage(void * p)
 				str.Append(_T("</string></arguments></invoke>"));
 				flash_pointer->CallFunction((LPCTSTR)str);
 				pre_completePercentage = completePercentage;
+				//::PostMessage(api_pointer->ownerWindow->GetSafeHwnd(), WM_USER+123, 0,0);
 #ifdef _DEBUG
 				if((completePercentage % 10) == 0)
 				{
@@ -253,7 +254,7 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 		if (err != ERR_DIR_BUILD_EXIST)
 		{
 			MessageBox(api_pointer->ownerWindow->m_hWnd, _T("在设备上创建\"") + destName + _T("\"文件夹失败，可能已经存在或设备磁盘空间已满"), _T("错误"), MB_OK|MB_ICONSTOP );
-			ret = flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
+			flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
 			return FALSE;
 		}
 	}
@@ -262,7 +263,10 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 	do
 	{
 		if (CString( info.cFileName ) == _T(".") ||  CString( info.cFileName ) == _T(".."))
+		{
 			continue;
+		}
+
 		srcTempName = srcName + _T("\\") + info.cFileName;
 		if ( info.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY )
 		{
@@ -287,7 +291,7 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 				{
 					FindClose( hwnd );
 					MessageBox(api_pointer->ownerWindow->m_hWnd, _T("磁盘已满"), _T("错误"), MB_OK|MB_ICONSTOP);
-					ret = flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
+					flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
 					return FALSE;
 				}
 			}
@@ -299,7 +303,7 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 			{
 				FindClose( hwnd );
 				MessageBox(api_pointer->ownerWindow->m_hWnd, _T("在设备上创建\"") + suFileName + _T("\"文件失败，可能已经存在或设备磁盘空间已满"), _T("错误"), MB_OK|MB_ICONSTOP);
-				ret = flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
+				flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
 				return FALSE;
 			}
 
@@ -312,17 +316,20 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 					err2 = fsCloseFile( err );
 					FindClose( hwnd );
 					MessageBox(api_pointer->ownerWindow->m_hWnd, srcTempName, _T("打开计算机上文件失败"), MB_OK|MB_ICONSTOP );
-					ret = flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
+					flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
 					return FALSE;
 				}
 
 				DWORD totalBytes = (DWORD)file.GetLength();
-				int completePercentage = 0;
-				DWORD dwBytesRemaining = (DWORD)file.GetLength();
+				int completePercentage = 0, pre_completePercentage = 0;
+				DWORD dwBytesRemaining = totalBytes;
+				float fv = 0.00 ;
+				TCHAR buff01[20] = {0};
+				CString str = _T("");
 
 				// may add check device size here
-				INT nWriteCnt;
-				UINT nBytesRead;
+				INT nWriteCnt = 0;
+				UINT nBytesRead = 0;
 				while ( dwBytesRemaining )
 				{
 					nBytesRead = file.Read( buffer, api_pointer->file_buff_size );
@@ -333,13 +340,31 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 						FindClose( hwnd );
 						err2 = fsCloseFile( err );
 						MessageBox(api_pointer->ownerWindow->m_hWnd, _T("在设备上写\"") + suFileName + _T("\"文件失败，可能设备磁盘空间已满"), _T("错误"), MB_OK|MB_ICONSTOP );
-						CString ret = flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
+						flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
 						return FALSE;
 					}
 					dwBytesRemaining -= nBytesRead;
 
+					fv = (float)dwBytesRemaining  / (float)totalBytes ;
+					fv *= 100 ;
+					completePercentage = 100 - (int)fv;
+					if( completePercentage > pre_completePercentage)
+					{
+						memset(buff01, 0, 20);
+						::_itot(completePercentage, buff01, 10);
+						str = _T("<invoke name=\"");
+						str += command;
+						str.Append(_T("\"><arguments><string>"));
+						str.Append(buff01);
+						//::OutputDebugStringW(buff01);
+						//::OutputDebugStringW(_T("\r\n"));
+						str.Append(_T("</string></arguments></invoke>"));
+						flash_pointer->CallFunction((LPCTSTR)str);
+						pre_completePercentage = completePercentage;
+					}
+
 					// transfer percentage
-					completePercentage = (totalBytes-dwBytesRemaining)*100/totalBytes;
+					/*completePercentage = (totalBytes-dwBytesRemaining)*100/totalBytes;
 					CString str;
 					str.Format(L" %d", completePercentage);
 
@@ -348,6 +373,7 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 					arg += str;
 					arg += _T("</string></arguments></invoke>");
 					ret = flash_pointer->CallFunction(arg);
+					*/
 				}
 				file.Close();
 			}
@@ -357,7 +383,7 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 				FindClose( hwnd );
 				MessageBox(api_pointer->ownerWindow->m_hWnd, pEx->m_strFileName, _T("Get length, read, or close PC file failed"), MB_OK|MB_ICONSTOP );
 				pEx->Delete();
-				ret = flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
+				flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
 				return FALSE;
 			}
 
@@ -366,7 +392,7 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 			{
 				FindClose( hwnd );
 				MessageBox(api_pointer->ownerWindow->m_hWnd, _T("Close \"") + suFileName + _T("\" failed, may disk full"), _T("Error"), MB_OK|MB_ICONSTOP );
-				ret = flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
+				flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
 				return FALSE;
 			}
 		}
@@ -413,7 +439,7 @@ void __cdecl threadInstallBuiltIn(void * p)
 		goto lb_exit ;
 	}
 
-	if (CopyDirectory(srcParent+_T("builtIn"), destParent+_T("builtIn2"), flash_pointer, _T("FL_updateSetTransferInformation"), _T("FL_failUpdate")))
+	if (CopyDirectory(srcParent+_T("builtIn"), destParent+_T("builtIn2"), flash_pointer, _T("FL_updateSetTransferInformation"), _T("FL_failUpdate")) == TRUE)
 	{
 		api_pointer->DeletePcDirectory(srcParent+_T("builtIn"));
 		::RemoveDirectory(srcParent+_T("builtIn"));
@@ -427,7 +453,7 @@ void __cdecl threadInstallBuiltIn(void * p)
 		}
 	}
 
-	if (CopyDirectory(srcParent+_T("base"), destParent+_T("base2"), flash_pointer, _T("FL_updateSetTransferInformation"), _T("FL_failUpdate")))
+	if (CopyDirectory(srcParent+_T("base"), destParent+_T("base2"), flash_pointer, _T("FL_updateSetTransferInformation"), _T("FL_failUpdate")) == TRUE)
 	{
 		api_pointer->DeletePcDirectory(srcParent+_T("base"));
 		::RemoveDirectory(srcParent+_T("base"));
