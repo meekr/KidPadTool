@@ -355,6 +355,8 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 						str = _T("<invoke name=\"");
 						str += command;
 						str.Append(_T("\"><arguments><string>"));
+						str.Append(info.cFileName);
+						str.Append(_T(" "));
 						str.Append(buff01);
 						//::OutputDebugStringW(buff01);
 						//::OutputDebugStringW(_T("\r\n"));
