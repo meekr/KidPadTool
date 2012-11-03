@@ -28,89 +28,160 @@ typedef struct _tagGENERAL_PARAMETER_BLOCK
 
 void __cdecl threadGetDownloadedApps(void * p)
 {
-	GENERAL_PARAMETER_BLOCK *tpb = (GENERAL_PARAMETER_BLOCK *)p;
-	CShockwaveflash1 *flash_pointer = tpb->flash_pointer;
-	CString downloadDirectory = CString(tpb->parameter1);
-
+	GENERAL_PARAMETER_BLOCK * tpb = 0 ;
+	CShockwaveflash1 *flash_pointer = 0 ;
+	CString downloadDirectory = _T("");
 	CFileFind finder;
-	TCHAR fileSizeBuf[16];
-	BOOL found = finder.FindFile(downloadDirectory + _T("*.npk"));
+	TCHAR fileSizeBuf[24] = {0};
+	BOOL found = FALSE ;
+	ULONGLONG l = 0 ;
+
+	if(p == 0)	{ goto lb_exit ; }
+
+	tpb = (GENERAL_PARAMETER_BLOCK *)p;
+	flash_pointer = tpb->flash_pointer;
+	if(flash_pointer == 0)	{ goto lb_exit ; }
+
+	downloadDirectory = CString(tpb->parameter1);
+
+	found = finder.FindFile(downloadDirectory + _T("*.npk"));
 
 	while(found)
 	{
 		found = finder.FindNextFile();
 
-		if (finder.IsDots())
+		if (finder.IsDots() == TRUE)
+		{
 			continue;
+		}
+		
+		memset(fileSizeBuf, 0, 24 * sizeof(TCHAR));
+		l = finder.GetLength();
+		::_i64tot(l, fileSizeBuf, 10);
 
-		_stprintf_s(fileSizeBuf, sizeof(fileSizeBuf) / sizeof(TCHAR), _T("%d"), finder.GetLength());
+		CString ret_value = _T("<invoke name=\"FL_addDownloadedApp\"><arguments><string>");
+		ret_value += finder.GetFilePath();
+		ret_value.Append(_T(","));
+		ret_value.Append(fileSizeBuf);
+		ret_value.Append(_T("</string></arguments></invoke>"));
+		flash_pointer->CallFunction(ret_value);
+		//flash_pointer->CallFunction(_T("<invoke name=\"FL_addDownloadedApp\"><arguments><string>") + ret_value + _T("</string></arguments></invoke>"));
+
+
+		/*_stprintf_s(fileSizeBuf, sizeof(fileSizeBuf) / sizeof(TCHAR), _T("%d"), finder.GetLength());
 		CString ret_value;
 		ret_value += finder.GetFilePath();
 		ret_value += ",";
 		ret_value += fileSizeBuf;
-		flash_pointer->CallFunction(_T("<invoke name='FL_addDownloadedApp'><arguments><string>") + ret_value + _T("</string></arguments></invoke>"));
+		flash_pointer->CallFunction(_T("<invoke name=\"FL_addDownloadedApp\"><arguments><string>") + ret_value + _T("</string></arguments></invoke>"));*/
 	}
 	finder.Close();
 
-	free(p);
+lb_exit:
+
+	if(p != 0)	{ free(p); }
 	_endthread();
 }
 
 void __cdecl threadGetLocalMedia(void * p)
 {
-	GENERAL_PARAMETER_BLOCK *tpb = (GENERAL_PARAMETER_BLOCK *)p;
-	CShockwaveflash1 *flash_pointer = tpb->flash_pointer;
-	CString directory = CString(tpb->parameter1);
-	CString extension = CString(tpb->parameter2);
-	CString mediatype = CString(tpb->parameter3);
+	GENERAL_PARAMETER_BLOCK *tpb = 0;
+	CShockwaveflash1 *flash_pointer =  0 ;
+	CString directory = _T("");
+	CString extension = _T("");
+	CString mediatype = _T("");
 
 	CFileFind finder;
-	TCHAR fileSizeBuf[16];
-	BOOL found = finder.FindFile(directory + _T("\\") + _T("*.*"));
+	TCHAR fileSizeBuf[24] = {0};
+	BOOL found = FALSE ;
+	ULONGLONG l = 0 ;
+
+	if(p == 0)	{ goto lb_exit ; }
+
+	tpb = (GENERAL_PARAMETER_BLOCK *)p;
+	flash_pointer = tpb->flash_pointer;
+	if(flash_pointer == 0)	{ goto lb_exit ; }
+
+	directory = CString(tpb->parameter1);
+	extension = CString(tpb->parameter2);
+	mediatype = CString(tpb->parameter3);
+
+	found = finder.FindFile(directory + _T("\\") + _T("*.*"));
 	while(found)
 	{
 		found = finder.FindNextFile();
 
-		if (finder.IsDots())
+		if (finder.IsDots() == TRUE)
+		{
 			continue;
+		}
 
 		CString filename = finder.GetFileName();
 		CString ext = filename.Right(filename.GetLength() - filename.ReverseFind(_T('.')) - 1);
-		if (extension.Find(ext.MakeLower()) == -1)
+		if (extension.Find(ext.MakeLower()) == (-1))
+		{
 			continue;
+		}
+		
+		memset(fileSizeBuf, 0, 24 * sizeof(TCHAR));
+		l = finder.GetLength();
+		::_i64tot(l, fileSizeBuf, 10);
 
-		_stprintf_s(fileSizeBuf, sizeof(fileSizeBuf) / sizeof(TCHAR), _T("%d"), finder.GetLength());
+		CString ret_value = _T("<invoke name=\"FL_addLocalMedia\"><arguments><string>");
+		ret_value += mediatype ;
+		ret_value.Append(_T(","));
+		ret_value.Append(fileSizeBuf);
+		ret_value.Append(_T(","));
+		ret_value += finder.GetFilePath();
+		ret_value.Append(_T("</string></arguments></invoke>"));
+		flash_pointer->CallFunction(ret_value);
+
+
+		/*_stprintf_s(fileSizeBuf, sizeof(fileSizeBuf) / sizeof(TCHAR), _T("%d"), finder.GetLength());
 		CString ret_value;
 		ret_value += mediatype;
 		ret_value += _T(",");
 		ret_value += fileSizeBuf;
 		ret_value += _T(",");
 		ret_value += finder.GetFilePath();
-		flash_pointer->CallFunction(_T("<invoke name='FL_addLocalMedia'><arguments><string>") + ret_value + _T("</string></arguments></invoke>"));
+		flash_pointer->CallFunction(_T("<invoke name='FL_addLocalMedia'><arguments><string>") + ret_value + _T("</string></arguments></invoke>"));*/
 	}
 	finder.Close();
 
-	free(p);
+lb_exit:
+
+	if(p != 0)	{ free(p); }
 	_endthread();
 }
 
 void __cdecl threadSendMessage2Flash(void * p)
 {
-	BIG_UI_DATA_PARAMETER_BLOCK *tpb = (BIG_UI_DATA_PARAMETER_BLOCK *)p;
-	CShockwaveflash1 *flash_pointer = tpb->flash_pointer;
-	CString method = CString(tpb->method);
-	CString argument = CString(tpb->argument);
+	BIG_UI_DATA_PARAMETER_BLOCK *tpb = 0 ;
+	CShockwaveflash1 *flash_pointer = 0 ;
+	CString method = _T("");
+	CString argument = _T(""); 
+
+	if(p == 0)	{ goto lb_exit ; }
+
+	tpb = (BIG_UI_DATA_PARAMETER_BLOCK *)p;
+	flash_pointer = tpb->flash_pointer;
+	if(flash_pointer == 0)	{ goto lb_exit ; }
+
+	method = CString(tpb->method);
+	argument = CString(tpb->argument);
 
 	flash_pointer->CallFunction(_T("<invoke name='") + method + _T("'><arguments><string>") + argument + _T("</string></arguments></invoke>"));
 
-	free(p);
+lb_exit:
+
+	if(p != 0)	{ free(p); }
 	_endthread();
 }
 
 void __cdecl threadUpdatePercentage(void * p)
 {
-	TRANSFER_PARAMETER_BLOCK *tpb = (TRANSFER_PARAMETER_BLOCK *)p;
-	CShockwaveflash1 *flash_pointer = tpb->flash_pointer;
+	TRANSFER_PARAMETER_BLOCK *tpb = 0 ;
+	CShockwaveflash1 *flash_pointer = 0 ;
 
 	BYTE buffer[api_pointer->file_buff_size] = { 0 };
 	TCHAR buff01[20] = {0};
@@ -124,6 +195,13 @@ void __cdecl threadUpdatePercentage(void * p)
 	UINT nBytesRead = 0;
 	CString str = _T("");
 	float fv = 0.00 ;
+
+	if(p == 0)	{ goto lb_exit ; }
+
+	tpb = (TRANSFER_PARAMETER_BLOCK *)p;
+	flash_pointer = tpb->flash_pointer;
+	if(flash_pointer == 0)	{ goto lb_exit ; }
+	
 
 	if(api_pointer->IsConnected(false) == false)
 	{
@@ -209,6 +287,7 @@ void __cdecl threadUpdatePercentage(void * p)
 			}
 		}
 		file.Close();
+		Sleep(1500);
 	}
 	catch ( CFileException* pEx )
 	{
@@ -232,19 +311,19 @@ lb_exit:
 
 	if(hdl > 0)	{ fsCloseFile( hdl ); }
 
-	free(p);
+	if(p != 0)	{ free(p); }
 	_endthread();
 }
 
 BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_pointer, CString command, CString failCommand)
 {
-	WIN32_FIND_DATA info;
-	HANDLE hwnd;
-	CString ret ;
-	CString tempName;
-	CString tempName1;
-	CString srcTempName;
-	CString destTempName;
+	WIN32_FIND_DATA info = {0};
+	HANDLE hwnd = 0;
+	CString ret = _T("");
+	CString tempName= _T("");
+	CString tempName1= _T("");
+	CString srcTempName= _T("");
+	CString destTempName= _T("");
 	tempName1 = srcName + _T("\\") + _T("*.*");
 
 	int err2;
@@ -378,6 +457,7 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 					*/
 				}
 				file.Close();
+				Sleep(1500);
 			}
 			catch ( CFileException* pEx )
 			{
@@ -407,10 +487,19 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 
 void __cdecl threadCopyPcDirectoryToDevice(void * p)
 {
-	GENERAL_PARAMETER_BLOCK *tpb = (GENERAL_PARAMETER_BLOCK *)p;
-	CShockwaveflash1 *flash_pointer = tpb->flash_pointer;
-	CString srcName(tpb->parameter1);
-	CString destName(tpb->parameter2);
+	GENERAL_PARAMETER_BLOCK *tpb =  0 ;
+	CShockwaveflash1 *flash_pointer = 0 ;
+	CString srcName = _T("");
+	CString destName = _T("");
+
+	if(p == 0)	{ goto lb_exit ; }
+
+	tpb = (GENERAL_PARAMETER_BLOCK *)p;
+	flash_pointer = tpb->flash_pointer;
+	if(flash_pointer == 0)	{ goto lb_exit ; }
+
+	srcName = CString(tpb->parameter1);
+	destName = CString(tpb->parameter2);
 
 	if(api_pointer->IsConnected(false) == false)
 	{
@@ -420,20 +509,31 @@ void __cdecl threadCopyPcDirectoryToDevice(void * p)
 	{
 		if (CopyDirectory(srcName, destName, flash_pointer, _T("FL_installSetTransferInformation"), _T("FL_failInstall")) == TRUE)
 		{
-			CString ret = flash_pointer->CallFunction(_T("<invoke name='FL_installCompleteTransfer'><arguments><string></string></arguments></invoke>"));
+			flash_pointer->CallFunction(_T("<invoke name='FL_installCompleteTransfer'><arguments><string></string></arguments></invoke>"));
 		}
 	}
 
-	free(p);
+lb_exit:
+
+	if(p != 0)	{ free(p); }
 	_endthread();
 }
 
 void __cdecl threadInstallBuiltIn(void * p)
 {
-	GENERAL_PARAMETER_BLOCK *tpb = (GENERAL_PARAMETER_BLOCK *)p;
-	CShockwaveflash1 *flash_pointer = tpb->flash_pointer;
-	CString srcParent(tpb->parameter1);
-	CString destParent(tpb->parameter2);
+	GENERAL_PARAMETER_BLOCK *tpb =  0 ;
+	CShockwaveflash1 *flash_pointer = 0 ;
+	CString srcParent = _T("");
+	CString destParent = _T("");
+
+	if(p == 0)	{ goto lb_exit ; }
+
+	tpb = (GENERAL_PARAMETER_BLOCK *)p;
+	flash_pointer = tpb->flash_pointer;
+	if(flash_pointer == 0)	{ goto lb_exit ; }
+
+	srcParent = CString(tpb->parameter1);
+	destParent = CString(tpb->parameter2);
 
 	if(api_pointer->IsConnected(false) == false)
 	{
@@ -466,11 +566,13 @@ void __cdecl threadInstallBuiltIn(void * p)
 		// rename base2 to base
 		flash_pointer->CallFunction(_T("<invoke name='FL_applyUpdate'><arguments><string></string></arguments></invoke>"));
 		if (fsRenameFile((CHAR *)(LPCWSTR)(destParent+_T("base2")), NULL, (CHAR *)(LPCWSTR)(destParent+_T("base")), NULL, TRUE) == FS_OK)
+		{
 			flash_pointer->CallFunction(_T("<invoke name='FL_updateCompleteTransfer'><arguments><string></string></arguments></invoke>"));
+		}
 	}
 
 lb_exit:
 
-	free(p);
+	if(p != 0)	{ free(p); }
 	_endthread();
 }
