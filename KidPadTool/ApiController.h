@@ -95,7 +95,7 @@ public:
 	CString GetAppStats();
 
 	//unsigned char file_buff[4096];
-	const static unsigned int file_buff_size = 4096 ;
+	const static unsigned int file_buff_size = 512 ;
 
 protected:
 	CString m_workingFolderName;

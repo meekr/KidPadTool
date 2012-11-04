@@ -326,11 +326,11 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 	CString destTempName= _T("");
 	tempName1 = srcName + _T("\\") + _T("*.*");
 
-	int err2;
-	int err = fsMakeDirectory( (CHAR *)(LPCWSTR)destName, NULL );
-	if (err != FS_OK)
+	int err2 = 0 ;
+	int hdl = fsMakeDirectory( (CHAR *)(LPCWSTR)destName, NULL );
+	if (hdl != FS_OK)
 	{
-		if (err != ERR_DIR_BUILD_EXIST)
+		if (hdl != ERR_DIR_BUILD_EXIST)
 		{
 			MessageBox(api_pointer->ownerWindow->m_hWnd, _T("在设备上创建\"") + destName + _T("\"文件夹失败，可能已经存在或设备磁盘空间已满"), _T("错误"), MB_OK|MB_ICONSTOP );
 			flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
@@ -377,8 +377,8 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 
 			tempName = destName + _T("\\") + info.cFileName;
 			CString suFileName = tempName;
-			err = fsOpenFile( (CHAR *)(LPCWSTR)suFileName, NULL, O_CREATE|O_TRUNC );
-			if ( err < 0 )
+			hdl = fsOpenFile( (CHAR *)(LPCWSTR)suFileName, NULL, O_CREATE|O_TRUNC );
+			if ( hdl < 0 )
 			{
 				FindClose( hwnd );
 				MessageBox(api_pointer->ownerWindow->m_hWnd, _T("在设备上创建\"") + suFileName + _T("\"文件失败，可能已经存在或设备磁盘空间已满"), _T("错误"), MB_OK|MB_ICONSTOP);
@@ -390,9 +390,9 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 			CFile file;
 			try
 			{
-				if ( !file.Open( srcTempName, CFile::modeRead ) )
+				if (file.Open( srcTempName, CFile::modeRead ) == FALSE)
 				{
-					err2 = fsCloseFile( err );
+					err2 = fsCloseFile(hdl);
 					FindClose( hwnd );
 					MessageBox(api_pointer->ownerWindow->m_hWnd, srcTempName, _T("打开计算机上文件失败"), MB_OK|MB_ICONSTOP );
 					flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
@@ -409,15 +409,16 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 				// may add check device size here
 				INT nWriteCnt = 0;
 				UINT nBytesRead = 0;
-				while ( dwBytesRemaining )
+				while ( dwBytesRemaining > 0)
 				{
 					nBytesRead = file.Read( buffer, api_pointer->file_buff_size );
-					err2 = fsWriteFile( err, buffer, nBytesRead, &nWriteCnt );
+					err2 = fsWriteFile(hdl, buffer, nBytesRead, &nWriteCnt );
 					if( err2 != FS_OK )
 					{
 						file.Close();
 						FindClose( hwnd );
-						err2 = fsCloseFile( err );
+						err2 = fsCloseFile(hdl);
+						Sleep(1000);
 						MessageBox(api_pointer->ownerWindow->m_hWnd, _T("在设备上写\"") + suFileName + _T("\"文件失败，可能设备磁盘空间已满"), _T("错误"), MB_OK|MB_ICONSTOP );
 						flash_pointer->CallFunction(_T("<invoke name='") + failCommand + _T("'><arguments><string></string></arguments></invoke>"));
 						return FALSE;
@@ -457,11 +458,12 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 					*/
 				}
 				file.Close();
-				Sleep(1000);
+				err2 = fsCloseFile(hdl);
+				Sleep(1500);
 			}
 			catch ( CFileException* pEx )
 			{
-				err2 = fsCloseFile( err );
+				err2 = fsCloseFile( hdl );
 				FindClose( hwnd );
 				MessageBox(api_pointer->ownerWindow->m_hWnd, pEx->m_strFileName, _T("Get length, read, or close PC file failed"), MB_OK|MB_ICONSTOP );
 				pEx->Delete();
@@ -469,7 +471,7 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 				return FALSE;
 			}
 
-			err2 = fsCloseFile( err );
+			
 			if ( err2 != FS_OK )
 			{
 				FindClose( hwnd );
