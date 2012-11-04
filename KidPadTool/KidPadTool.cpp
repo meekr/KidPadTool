@@ -245,7 +245,6 @@ BOOL CKidPadToolApp::InitInstance()
 BOOL CKidPadToolApp::ExitUsb()
 {
 	// TODO: Add your specialized code here and/or call the base class
-	//if(usb_disk_status == 0)	{ return TRUE ; }
 	// Nuvoton CCLi8 (2010.08.12)
 	std::map <std::basic_string<TCHAR>, PDISK_T *>::iterator it;
 	for (it = m_usbDisks.begin (); it != m_usbDisks.end (); it ++) {
@@ -263,12 +262,65 @@ BOOL CKidPadToolApp::ExitUsb()
 	}
 	m_usbDisks.clear();
 
+	/*if(m_usbDisks.empty() == false)
+	{
+		PDISK_T *usbDisk = m_usbDisks.begin()->second;
+		UsbDiskDriver *usbDiskDriver = static_cast<UsbDiskDriver *> (usbDisk->ptDriver);
+
+		fsUnmountPhysicalDisk (usbDisk);
+
+		m_usbDisks.erase(m_usbDisks.begin()->first);
+		usbDiskDriver->onDriveDetach ();
+
+		delete usbDisk;
+		delete usbDiskDriver;
+
+
+		m_usbDisks.clear();
+	}*/
+
+	return TRUE;
+}
+
+BOOL CKidPadToolApp::ExitUsb2()
+{
+	// TODO: Add your specialized code here and/or call the base class
+	// Nuvoton CCLi8 (2010.08.12)
+//	std::map <std::basic_string<TCHAR>, PDISK_T *>::iterator it;
+//	for (it = m_usbDisks.begin (); it != m_usbDisks.end (); it ++) {
+//		PDISK_T *usbDisk = it->second;
+//		UsbDiskDriver *usbDiskDriver = static_cast<UsbDiskDriver *> (usbDisk->ptDriver);
+//		//fsUnmountPhysicalDisk (usbDisk);
+//		//usbDiskDriver->onDriveDetach ();
+////		m_usbDisks.erase (it->first);
+//		//delete usbDisk;
+//		//delete usbDiskDriver;
+//		//fsPhysicalDiskDisconnected(usbDisk);
+//		//delete usbDisk;
+//		usbDiskDriver->onDriveDetach ();
+//		delete usbDiskDriver;
+//	}
+//	m_usbDisks.clear();
+	if(m_usbDisks.empty() == false)
+	{
+		std::map <std::basic_string<TCHAR>, PDISK_T *>::iterator it;
+		for (it = m_usbDisks.begin(); it != m_usbDisks.end(); it ++) {
+			PDISK_T *usbDisk = it->second;
+			UsbDiskDriver *usbDiskDriver = static_cast<UsbDiskDriver *> (usbDisk->ptDriver);
+			fsUnmountPhysicalDisk (usbDisk);
+			usbDiskDriver->onDriveDetach ();
+			//m_usbDisks.erase (it->first);
+			delete usbDisk;
+			delete usbDiskDriver;
+		}
+	}
+
 	return TRUE;
 }
 
 int CKidPadToolApp::ExitInstance()
 {
-	ExitUsb();
-
+	//ExitUsb();
+	ExitUsb2();
 	return CWinAppEx::ExitInstance();
 }

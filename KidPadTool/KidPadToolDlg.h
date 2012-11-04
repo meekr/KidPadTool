@@ -15,7 +15,7 @@ public:
 	ApiController apiController;
 
 	CKidPadToolDlg(CWnd* pParent = NULL);	// 标准构造函数
-	void TestFunction01(void * p1, void * p2, void * p3);
+	//void TestFunction01(void * p1, void * p2, void * p3);
 
 // 对话框数据
 	enum { IDD = IDD_KIDPADTOOL_DIALOG };
@@ -61,4 +61,6 @@ public:
 	void FlashCallShockwaveflash1(LPCTSTR request);
 
 	CShockwaveflash1 CShockwaveflash0;
+
+	void DetatchUsbDevice();
 };

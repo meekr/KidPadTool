@@ -48,11 +48,13 @@ public:
 	CShockwaveflash1 *flashUI;
 	void Initialize();
 	void UpdateList();
-	void UpdateList2(void * pdisk);
+	bool UpdateList2(void * pdisk, TCHAR * disk_name);
 	void ScanUsbDisk();
 	
 	bool IsConnected(bool scan_flag);
 	void SetConnStatus(bool v);
+	unsigned char  GetConnectUsbDeviceCode();
+	TCHAR * GetConnectUsbDiskName();
 	bool IsDeviceFileExist(CString full_file_name);
 	INT64 WriteStream2DeviceFile(CString target_file_name, void * stream_buff, INT64 buff_len, bool is_use_temp_flag);
 

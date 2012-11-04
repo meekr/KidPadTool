@@ -49,7 +49,7 @@ public:
 
 public:
 	virtual BOOL ExitUsb();
-
+	BOOL ExitUsb2();
 
 	virtual int ExitInstance();
 };

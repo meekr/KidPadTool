@@ -21,28 +21,7 @@
 
 clock_t volatile time_flag = 0 ;
 // CKidPadToolDlg 对话框
-//int volatile usb_disk_status = 0;
-
 CKidPadToolDlg * app_ptr = 0 ;
-static void __cdecl TestCmdApp(void * p1, void * p2, void * p3)
-{
-	return app_ptr->TestFunction01(p1, p2, p3);
-}
-
-void CKidPadToolDlg::TestFunction01(void * p1, void * p2, void * p3)
-{
-	const char * buff = (char*)p1 ;
-	if(buff == 0)
-	{
-		::OutputDebugStringA("Completed!\n");
-	}
-	else
-	{
-		//::OutputDebugStringA("\r\n");
-		::OutputDebugStringA(buff);
-	}
-	return ;
-}
 
 
 CKidPadToolDlg::CKidPadToolDlg(CWnd* pParent /*=NULL*/)
@@ -128,7 +107,8 @@ BOOL CKidPadToolDlg::OnInitDialog()
 	
 	CWnd::SetWindowPos(NULL, 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SWP_NOZORDER);
 	
-	
+	app_ptr = this ;
+		
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -186,6 +166,35 @@ HCURSOR CKidPadToolDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
+void CKidPadToolDlg::DetatchUsbDevice()
+{
+	TCHAR * diskDriveNameBuf = apiController.GetConnectUsbDiskName();
+	if(diskDriveNameBuf[0] >0)
+	{
+
+		std::map <std::basic_string<TCHAR>, PDISK_T *> &usbDisks = (((CKidPadToolApp *)AfxGetApp())->m_usbDisks);
+		if(usbDisks.empty() == false)
+		{
+			std::map <std::basic_string<TCHAR>, PDISK_T *>::iterator it = usbDisks.find (diskDriveNameBuf);
+			if (it != usbDisks.end ())
+			{
+				PDISK_T *usbDisk = it->second;
+				UsbDiskDriver *usbDiskDriver = static_cast<UsbDiskDriver *> (usbDisk->ptDriver);
+
+				//fsUnmountPhysicalDisk (usbDisk);
+				//fsPhysicalDiskDisconnected(usbDisk);
+
+				usbDisks.erase (diskDriveNameBuf);
+				usbDiskDriver->onDriveDetach ();
+
+				//delete usbDisk;
+				delete usbDiskDriver;
+			}
+		}
+		(((CKidPadToolApp *)AfxGetApp ())->m_usbDisks).clear();
+	}
+	return ;
+}
 
 afx_msg BOOL CKidPadToolDlg::OnDeviceChange(UINT nEventType, DWORD_PTR dwData)
 {
@@ -204,8 +213,8 @@ afx_msg BOOL CKidPadToolDlg::OnDeviceChange(UINT nEventType, DWORD_PTR dwData)
 			::OutputDebugString(_T("DBT_DEVICEREMOVECOMPLETE\r\n"));
 			if(apiController.IsConnected(false) == true)
 			{
-				((CKidPadToolApp *)AfxGetApp ())->ExitUsb();
-				
+				//((CKidPadToolApp *)AfxGetApp ())->ExitUsb();
+				DetatchUsbDevice();
 				TRACE("USB disconnected\n");
 				//设备物理断开完成
 				flashUI.CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>3</string></arguments></invoke>"));
@@ -233,13 +242,12 @@ afx_msg BOOL CKidPadToolDlg::OnDeviceChange(UINT nEventType, DWORD_PTR dwData)
 					return TRUE;
 				}
 			}
-
 			if(apiController.IsConnected(false) == false)
 			{
 				//设备物理插入完成
 				flashUI.CallFunction(_T("<invoke name='FL_setDeviceConnection'><arguments><string>2</string></arguments></invoke>"));
-				//延时5秒让os完成它需要的处理
-				Sleep(5000);
+				//延时3秒让os完成它需要的处理
+				//Sleep(3000);
 				//进行扫描， 判断是否可用的设备
 				apiController.ScanUsbDisk();
 				return TRUE;

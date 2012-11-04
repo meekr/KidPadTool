@@ -287,7 +287,7 @@ void __cdecl threadUpdatePercentage(void * p)
 			}
 		}
 		file.Close();
-		Sleep(1500);
+		Sleep(1000);
 	}
 	catch ( CFileException* pEx )
 	{
@@ -457,7 +457,7 @@ BOOL CopyDirectory(CString srcName, CString destName, CShockwaveflash1 *flash_po
 					*/
 				}
 				file.Close();
-				Sleep(1500);
+				Sleep(1000);
 			}
 			catch ( CFileException* pEx )
 			{
