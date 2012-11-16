@@ -93,6 +93,7 @@ public:
 	BOOL CopyDeviceFile2PC(CString deviceFile, CString pcFile);
 	CString GetCategoryStats();
 	CString GetAppStats();
+	void Diagnose();
 
 	//unsigned char file_buff[4096];
 	const static unsigned int file_buff_size = 512 ;
