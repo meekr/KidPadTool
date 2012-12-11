@@ -70,6 +70,7 @@ public:
 	BOOL CancelDownload(CString appPathWithoutExtention);
 	BOOL Import2Library();
 	CString GetFirmwareVersion();
+	void CheckClientOS();
 	BOOL UpdateFirmware(CString zipFilePath);
 	void DeletePcDirectory(CString szPath);
 	void DispatchFlashCommand(CString command, CString args);

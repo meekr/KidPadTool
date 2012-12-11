@@ -90,7 +90,14 @@ BOOL CKidPadToolDlg::OnInitDialog()
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
+
 	SetWindowText(_T("E巧派 助手"));
+#ifdef _BYM
+	SetWindowText(_T("贝因美学习机 助手"));	
+#endif
+#ifdef _XBW
+	SetWindowText(_T("小霸王学习机 助手"));	
+#endif
 
 	// TODO: 在此添加额外的初始化代码
 	TCHAR szFolder[MAX_PATH * 2];
