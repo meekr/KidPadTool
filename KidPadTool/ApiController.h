@@ -81,7 +81,7 @@ public:
 	void TransferApp(CString appName);
 	CString InsertAppNode(CString appName);
 	CString GetDeviceApps(CString xmlFile);
-	CString GetDeviceMedia(CString xmlFile, CString directory);
+	CString GetDeviceMedia(CString xmlFile, CString directory, BOOL isSubMedia);
 	void DeleteDeviceMedia(CString xmlFile, CString mediaFile);
 
 	void ExtractZipCallback(void * p1, void * p2, void * p3);
