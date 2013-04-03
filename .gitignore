@@ -14,6 +14,19 @@
 
 # Build and Release Folders
 Debug/
+Release/
+BYM_Debug/
+BYM_Release/
+components/
+EPadClient.swf
+KidPadTool.ncb
+skins/
+vendors/
+XBW_Debug/
+XBW_Release/
+XXM_Debug/
+XXM_Release/
 KidPadTool/Debug
+*.swz
 =======
 >>>>>>> 5649446b9b6379b3baf1b5b2ce240f6f288c06ad
